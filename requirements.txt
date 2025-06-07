@@ -2,6 +2,5 @@ Flask ==3.1.1
 Jinja2 ==3.1.6
 Pandas==2.3.0
 Werkzeug ==3.1.1
-Bcript ==4.3.0
 Bliker ==1.9.0
 Flask-SQLAlchemy ==3.1.1
