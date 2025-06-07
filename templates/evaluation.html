@@ -305,6 +305,48 @@
             }, duration);
         }
 
+        // Function to format datetime with correct timezone handling
+        function formatDatetime(value) {
+            if (value) {
+                try {
+                    // Assume backend sends ISO-like string. If no timezone info, treat as UTC.
+                    let dateString = value;
+                    if (!value.endsWith('Z') && !value.includes('+') && !value.includes('-')) {
+                        // If no timezone info, treat as UTC by adding 'Z'
+                        dateString = value.replace(' ', 'T') + 'Z'; // e.g., "2023-01-01 10:00:00" -> "2023-01-01T10:00:00Z"
+                    }
+
+                    const dt_object = new Date(dateString);
+
+                    // Check if date is valid
+                    if (isNaN(dt_object.getTime())) {
+                        throw new Error('Invalid Date');
+                    }
+
+                    // Format to user's local timezone
+                    const options = {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false // 24-hour format
+                    };
+                    // toLocaleString will correctly convert UTC time to the browser's local timezone
+                    const formatted = dt_object.toLocaleString('de-DE', options); // Example for German locale
+                    
+                    // Refine the output to be "DD.MM. - HH:MM"
+                    const [datePart, timePart] = formatted.split(' '); // e.g. "07.06. 10:45"
+                    const cleanedDatePart = datePart.replace(/\.\d{4}/, ''); // Remove .YYYY if present
+
+                    return `${cleanedDatePart} - ${timePart}`;
+                } catch (e) {
+                    console.error("Date formatting error:", e);
+                    return 'N/A'; // Fallback if format is invalid
+                }
+            }
+            return 'N/A';
+        }
+
 
         document.addEventListener('DOMContentLoaded', async function() {
             const standSelect = document.getElementById('stand_id');
@@ -502,7 +544,7 @@
                     const data = await response.json();
 
                     if (data.success && data.exists) {
-                        document.getElementById('existing-timestamp').textContent = data.timestamp; // Use formatted timestamp directly
+                        document.getElementById('existing-timestamp').textContent = formatDatetime(data.timestamp); // Use formatted timestamp directly
                         existingEvaluationBanner.classList.remove('hidden');
 
                         allCriteria.forEach(criterion => {

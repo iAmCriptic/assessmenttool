@@ -339,14 +339,45 @@
         function formatDatetime(value) {
             if (value) {
                 try {
-                    const dt_object = new Date(value);
-                    const day = String(dt_object.getDate()).padStart(2, '0');
-                    const month = String(dt_object.getMonth() + 1).padStart(2, '0');
-                    const hours = String(dt_object.getHours()).padStart(2, '0');
-                    const minutes = String(dt_object.getMinutes()).padStart(2, '0');
-                    return `${day}.${month}. - ${hours}:${minutes}`;
+                    // Annahme: Backend sendet ISO-Datums-/Zeitstring (z.B. "YYYY-MM-DDTHH:MM:SS" oder "YYYY-MM-DD HH:MM:SS")
+                    // Wenn der String keine Zeitzoneninformation enthält, wird er standardmäßig als lokale Zeit interpretiert.
+                    // Um sicherzustellen, dass er als UTC interpretiert und dann in die lokale Zeitzone des Benutzers konvertiert wird,
+                    // fügen wir ein 'Z' (UTC-Indikator) hinzu, falls es fehlt.
+                    let dateString = value;
+                    if (!value.endsWith('Z') && !value.includes('+') && !value.includes('-')) {
+                        // Wenn keine Zeitzoneninfo, als UTC behandeln, indem 'Z' hinzugefügt wird
+                        dateString = value.replace(' ', 'T') + 'Z'; // z.B. "2023-01-01 10:00:00" -> "2023-01-01T10:00:00Z"
+                    }
+
+                    const dt_object = new Date(dateString);
+
+                    // Überprüfen, ob das Datum gültig ist
+                    if (isNaN(dt_object.getTime())) {
+                        throw new Error('Invalid Date');
+                    }
+
+                    // Formatierung in die lokale Zeitzone des Benutzers
+                    const options = {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false // 24-Stunden-Format
+                    };
+                    // toLocaleString wird die UTC-Zeit korrekt in die lokale Zeitzone des Browsers konvertieren
+                    // und dann formatieren.
+                    const formatted = dt_object.toLocaleString('de-DE', options); // Beispiel für Deutsch
+                    // Das Ergebnis ist z.B. "31.12.2023, 23:00" oder "01.01.2024, 01:00"
+                    // Wir müssen den Trenner zwischen Datum und Uhrzeit anpassen und die Jahreszahl entfernen.
+                    const parts = formatted.split(', ');
+                    if (parts.length === 2) {
+                        // Entfernt die Jahreszahl (vier Ziffern) und ersetzt das Komma durch " - "
+                        return `${parts[0].replace(/\.\d{4}$/, '')}. - ${parts[1]}`;
+                    }
+                    return formatted; // Fallback, falls Format nicht wie erwartet ist
                 } catch (e) {
-                    return value; // Fallback, falls Format ungültig ist
+                    console.error("Date formatting error:", e);
+                    return 'N/A'; // Fallback, falls Format ungültig ist
                 }
             }
             return 'N/A';
@@ -497,11 +528,17 @@
 
                         data.room_inspections.forEach(room => {
                             const standsList = room.stands.map(s => s.name).join(', ') || 'Keine Stände zugeordnet';
-                            const isCleanStatus = room.is_clean ? 'Sauber' : 'Nicht sauber';
-                            const statusColorClass = room.is_clean ? 'text-green-500 font-semibold' : 'text-red-500 font-semibold'; // Farben für Status
+                            // Überprüfen, ob der Raum inspiziert wurde. Wenn nicht, zeige "offen" an.
+                            const isInspected = room.inspection_timestamp !== null && room.inspection_timestamp !== undefined;
+                            const isCleanStatus = isInspected ? (room.is_clean ? 'Sauber' : 'Nicht sauber') : 'Offen';
+                            const statusColorClass = isInspected
+                                ? (room.is_clean ? 'text-green-500 font-semibold' : 'text-red-500 font-semibold')
+                                : 'text-yellow-500 font-semibold'; // Farbe für "offen"
                             const commentText = room.comment || 'Kein Kommentar';
                             const displayComment = commentText.length > 15 ? commentText.substring(0, 15) + '...' : commentText;
                             const fullCommentDisplay = commentText.length > 15 ? `<span class="read-more cursor-pointer ${readMoreLinkClass}" data-full-comment="${commentText}">Mehr lesen</span>` : '';
+                            const inspectorName = room.inspector_display_name || (isInspected ? 'N/A' : ''); // Zeige N/A nur, wenn inspiziert, sonst leer
+                            const inspectionTime = isInspected ? formatDatetime(room.inspection_timestamp) : ''; // Zeige Zeit nur, wenn inspiziert
 
                             // Tabellenzeile
                             tableHtml += `
@@ -509,8 +546,8 @@
                                     <td class="py-3 px-4 ${cellTextColor}">${room.room_name}</td>
                                     <td class="py-3 px-4 ${subTextColor} text-sm">${standsList}</td>
                                     <td class="py-3 px-4 ${statusColorClass}">${isCleanStatus}</td>
-                                    <td class="py-3 px-4 ${subTextColor}">${room.inspector_display_name || 'N/A'}</td>
-                                    <td class="py-3 px-4 ${subTextColor}">${formatDatetime(room.inspection_timestamp)}</td>
+                                    <td class="py-3 px-4 ${subTextColor}">${inspectorName}</td>
+                                    <td class="py-3 px-4 ${subTextColor}">${inspectionTime}</td>
                                     <td class="py-3 px-4 ${subTextColor} comment-cell" data-full-comment="${commentText}">
                                         ${displayComment} ${fullCommentDisplay}
                                     </td>
@@ -539,8 +576,8 @@
                                     <h3 class="text-lg font-semibold ${cellTextColor} mb-2">${room.room_name}</h3>
                                     <p class="${subTextColor} text-sm mb-1"><strong>Stände:</strong> ${standsList}</p>
                                     <p class="${statusColorClass} text-sm mb-1"><strong>Sauberkeit:</strong> ${isCleanStatus}</p>
-                                    <p class="${subTextColor} text-sm mb-1"><strong>Inspiziert von:</strong> ${room.inspector_display_name || 'N/A'}</p>
-                                    <p class="${subTextColor} text-sm mb-2"><strong>Datum/Zeit:</strong> ${formatDatetime(room.inspection_timestamp)}</p>
+                                    <p class="${subTextColor} text-sm mb-1"><strong>Inspiziert von:</strong> ${inspectorName}</p>
+                                    <p class="${subTextColor} text-sm mb-2"><strong>Datum/Zeit:</strong> ${inspectionTime}</p>
                                     <p class="${subTextColor} text-sm mb-4 comment-cell" data-full-comment="${commentText}">
                                         <strong>Kommentar:</strong> ${displayComment} ${fullCommentDisplay}
                                     </p>
@@ -576,7 +613,7 @@
                     } else {
                         roomInspectionsTableContainer.innerHTML = '';
                         roomInspectionsCardsContainer.innerHTML = '';
-                        noInspectionsMessage.classList.add('hidden');
+                        noInspectionsMessage.classList.remove('hidden'); // Nachricht anzeigen, wenn keine Inspektionen vorliegen
                     }
                 } catch (error) {
                     console.error('Fehler beim Abrufen der Rauminspektionen:', error);
