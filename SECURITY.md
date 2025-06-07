@@ -7,10 +7,8 @@ currently being supported with security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 2.0.1   | :white_check_mark: |
+| <2.0.1  | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -24,5 +22,5 @@ Start a Discussion:
   
 Please try to include as much information as possible to help us understand and address the issue efficiently.
 
-##Disclaimer: School Project
+## Disclaimer: School Project
 This "Bewertungstool" is a recreational project developed for educational purposes as part of a school assignment. While we have made efforts to ensure its functionality and reasonable security, there is no guarantee or claim for error resolution, ongoing support, or security patches. Users are advised to use this tool at their own discretion.
