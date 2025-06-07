@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Body-Stile für Light- und Dark-Mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            flex-direction: column; /* Für vertikale Anordnung von Überschrift und Login-Box */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Sanfter Übergang für den Hintergrund und Textfarbe */
+        }
+        /* Die Dark Mode Hintergrundfarben werden nun vollständig über JavaScript gesetzt,
+           basierend auf den Admin-Einstellungen. Die CSS-Klasse 'dark' wird nur für
+           andere Dark Mode-Stile (Textfarben, Box-Schatten etc.) verwendet. */
+        body.dark {
+            color: #e2e7eb; /* Hellerer Text für Dark Mode */
+        }
+
+        /* Hauptcontainer und Karten-Stile für Light- und Dark-Mode */
+        .bg-white {
+            background-color: #ffffff; /* Light Mode: Weißer Hintergrund */
+        }
+        .dark .bg-white {
+            background-color: #000000; /* Dark Mode: Komplett schwarz für OLED-Optimierung, passend zum Login */
+        }
+        .text-gray-800 {
+            color: #1f2937; /* Light Mode: Dunkler Text */
+        }
+        .dark .text-gray-800 {
+            color: #e2e7eb; /* Dark Mode: Hellerer Text für Überschriften */
+        }
+        .text-gray-600 {
+            color: #4b5563; /* Light Mode: Grauer Text */
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0; /* Dark Mode: Hellerer Text für Beschreibungen */
+        }
+        .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Light Mode: Standard Schatten */
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25); /* Dark Mode: Dunklerer Schatten */
+        }
+        .bg-amber-50 {
+            background-color: #FFFBEB; /* Light Mode: Helles Amber für Formularhintergrund */
+        }
+        .dark .bg-amber-50 {
+            background-color: #1c1c1c; /* Dark Mode: Dunkler für Formularhintergrund */
+            color: #e2e7eb; /* Dark Mode: Heller Text */
+        }
+        .text-gray-700 {
+            color: #4a5568; /* Light Mode: Standard Grauton */
+        }
+        .dark .text-gray-700 {
+            color: #ffffff; /* Dark Mode: Weißer Text */
+        }
+        .border {
+            border-color: #e2e8f0; /* Light Mode: Heller Rahmen */
+        }
+        .dark .border {
+            border-color: #555555; /* Dark Mode: Dunklerer Rahmen */
+        }
+
+        /* Input-Felder und Textareas */
+        input[type="text"],
+        input[type="password"], /* Auch für Passwörter */
+        textarea,
+        select {
+            background-color: #ffffff; /* Light Mode: Weiß */
+            color: #374151; /* Light Mode: Dunkler Text */
+            border-color: #d1d5db; /* Light Mode: Heller Rand */
+        }
+        .dark input[type="text"],
+        .dark input[type="password"], /* Auch für Passwörter */
+        .dark textarea,
+        .dark select {
+            background-color: #1c1c1c; /* Dark Mode: Sehr dunkel */
+            color: #ffffff; /* Dark Mode: Weißer Text */
+            border-color: #555555; /* Dark Mode: Dunkler Rand */
+        }
+        .dark input[type="text"]::placeholder,
+        .dark input[type="password"]::placeholder, /* Auch für Passwörter */
+        .dark textarea::placeholder {
+            color: #aaaaaa; /* Hellerer Platzhaltertext im Dark Mode */
+        }
+        .focus\:ring-orange-400:focus {
+            --tw-ring-color: #fbd38d; /* Orange Ringfarbe */
+        }
+
+        /* Buttons */
+        .bg-orange-500 {
+            background-color: #f97316; /* Light Mode: Standard Orange */
+        }
+        .hover\:bg-orange-600:hover {
+            background-color: #ea580c; /* Light Mode: Dunkleres Orange beim Hover */
+        }
+        .dark .bg-orange-500 {
+            background-color: #c05621; /* Dark Mode: Dunkleres Orange */
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #9c4221; /* Noch dunkleres Orange im Dark Mode */
+        }
+
+        /* Dark Mode Toggle Button Styling */
+        #darkModeToggle {
+            background-color: #000000; /* Standard Hintergrund für Buttons */
+            color: #ffffff; /* Standard Textfarbe für Buttons */
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.5rem;
+            border: none; /* Keine zusätzlichen Ränder */
+            cursor: pointer;
+            padding: 0; /* Entfernt jegliches Padding */
+            margin: 0; /* Entfernt jeglichen Margin */
+        }
+
+        body.dark #darkModeToggle {
+            background-color: #ffffff; /* Hintergrund im Dark Mode */
+            color: #000000; /* Textfarbe im Dark Mode */
+        }
+
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px; /* Sicherstellen, dass die Icon-Größe konsistent ist */
+        }
+
+        /* Password Toggle Icon Styling (optimiert für Zentrierung mit transform) */
+        .password-toggle-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%; /* Startet bei 50% der Höhe des Elternelements */
+            transform: translateY(-50%); /* Verschiebt das Element um die Hälfte seiner eigenen Höhe nach oben */
+            cursor: pointer;
+            color: #6b7280;
+            display: flex; /* Für mögliche zukünftige interne Zentrierung des Icons */
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+            height: auto; /* Wichtig: Höhe nicht auf 100% setzen, damit translateY korrekt funktioniert */
+        }
+        .dark .password-toggle-icon {
+            color: #9ca3af;
+            background-color: transparent;
+            border-color: transparent;
+        }
+
+        /* Anpassung des Passwort-Input-Feldes, um Platz für das Auge-Symbol zu schaffen */
+        input[type="password"] {
+            padding-right: 3rem; /* Genug Platz für das Icon */
+        }
+
+        /* Styling für den dynamischen Titel */
+        .dynamic-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            /* Hintergrund-Gradient wird dynamisch über JS gesetzt */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .dark .dynamic-title {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Responsive Anpassungen für den Titel */
+        @media (max-width: 768px) {
+            .dynamic-title {
+                font-size: 2.5rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .dynamic-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* Inline Message Styling */
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem; /* text-sm */
+            border-width: 1px;
+            display: none; /* Hidden by default */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .message-box.success {
+            background-color: #d4edda; /* bg-green-100 */
+            color: #155724; /* text-green-800 */
+            border-color: #c3e6cb; /* border-green-400 */
+        }
+
+        .message-box.error {
+            background-color: #f8d7da; /* bg-red-100 */
+            color: #721c24; /* text-red-800 */
+            border-color: #f5c6cb; /* border-red-400 */
+        }
+
+        .dark .message-box.success {
+            background-color: #0f5132; /* Darker green for dark mode */
+            color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .dark .message-box.error {
+            background-color: #721c24; /* Darker red for dark mode */
+            color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        /* Footer Styling */
+        .footer-info {
+            position: fixed; /* Fixiert am Viewport */
+            bottom: 1rem; /* 16px vom unteren Rand */
+            left: 1rem; /* 16px vom linken Rand */
+            color: #6b7280; /* Standard grauer Text */
+            font-size: 0.75rem; /* text-xs */
+            text-align: left;
+            z-index: 999; /* Stellt sicher, dass es über anderen Inhalten liegt */
+        }
+
+        .dark .footer-info {
+            color: #9ca3af; /* Hellerer Grauton im Dark Mode */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md relative pt-20">
+        {# Logo oben links im Login-Container #}
+        <div class="absolute top-0 left-0 p-4">
+            <img id="loginLogo" src="{{ logo_url }}" alt="Logo" class="max-h-16">
+        </div>
+
+        {# Dark Mode Toggle Button #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i> {# Initiales Icon: Mond #}
+            </button>
+        </div>
+
+        {# Dynamischer Titel #}
+        <div class="text-center mb-6">
+            <h1 id="dynamicLoginTitle" class="dynamic-title"></h1>
+        </div>
+
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="message-box" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">Benutzername:</label>
+                <input type="text" id="username" name="username" required
+                       class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out"
+                       placeholder="Benutzername">
+            </div>
+            <div class="relative">
+                <label for="password" class="block text-gray-700 text-sm font-semibold mb-2">Passwort:</label>
+                <input type="password" id="password" name="password" required
+                       class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out"
+                       placeholder="Passwort">
+                <span id="passwordToggle" class="password-toggle-icon">
+                    <i class="fi fi-rr-eye"></i> {# Initiales Icon: Auge #}
+                </span>
+            </div>
+            <button type="submit"
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Anmelden
+            </button>
+        </form>
+    </div>
+
+    {# Footer Information #}
+    <div class="footer-info">
+        <p>Erstellt von Enrico R. Matzke</p>
+        <p>Frontend Version 2.1.000</p>
+        <p>Backend Version 1.7.0014</p>
+    </div>
+
+    <script>
+        // Funktion zur Anzeige von Inline-Nachrichten
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inlineMessage');
+            const messageText = document.getElementById('inlineMessageText');
+
+            messageText.textContent = message;
+            messageBox.className = 'message-box show'; // Klassen zurücksetzen und anzeigen
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else {
+                // Standard-Info-Stil, falls erforderlich, oder einfach auf den Basis-Nachrichtenbox-Stil verlassen
+            }
+
+            // Nachricht nach 'duration' Millisekunden ausblenden
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                // Optional: Text nach dem Übergang für Zugänglichkeit/Sauberkeit löschen
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Sollte der CSS-Übergangsdauer entsprechen
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const body = document.body;
+            const loginForm = document.getElementById('loginForm');
+            const dynamicLoginTitle = document.getElementById('dynamicLoginTitle'); // Referenz zum dynamischen Titel
+            const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
+            const loginLogo = document.getElementById('loginLogo'); // Referenz zum Login-Logo hinzugefügt
+
+            // Funktion zum Abrufen und Anwenden der App-Einstellungen
+            async function applyAppSettings() {
+                try {
+                    // KORREKTUR: Die API-Route wurde auf 'admin_settings.api_get_admin_settings' angepasst.
+                    const response = await fetch('{{ url_for("admin_settings.api_get_admin_settings") }}'); 
+                    if (!response.ok) {
+                        console.error('Fehler beim Abrufen der App-Einstellungen: HTTP-Status', response.status);
+                        return;
+                    }
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+
+                        // Titeltext anwenden
+                        if (dynamicLoginTitle) {
+                            dynamicLoginTitle.textContent = settings.index_title_text || 'Willkommen';
+                            
+                            // Titel-Farbe als Gradient anwenden
+                            if (settings.index_title_color) {
+                                const baseColor = settings.index_title_color;
+                                const isDark = body.classList.contains('dark');
+                                let gradientColor1 = baseColor;
+                                let gradientColor2 = baseColor;
+
+                                try {
+                                    const hexToRgb = hex => {
+                                        const bigint = parseInt(hex.slice(1), 16);
+                                        return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+                                    };
+                                    const rgbToHex = (r, g, b) => '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+
+                                    const rgb = hexToRgb(baseColor);
+                                    let r2 = rgb.r;
+                                    let g2 = rgb.g;
+                                    let b2 = rgb.b;
+
+                                    if (isDark) { // Für Dark Mode: etwas heller machen
+                                        r2 = Math.min(255, rgb.r + 30);
+                                        g2 = Math.min(255, rgb.g + 30);
+                                        b2 = Math.min(255, rgb.b + 30);
+                                    } else { // Für Light Mode: etwas dunkler machen
+                                        r2 = Math.max(0, rgb.r - 30);
+                                        g2 = Math.max(0, rgb.g - 30);
+                                        b2 = Math.max(0, rgb.b - 30);
+                                    }
+                                    gradientColor2 = rgbToHex(r2, g2, b2);
+                                    dynamicLoginTitle.style.backgroundImage = `linear-gradient(to right, ${gradientColor1}, ${gradientColor2})`;
+                                    dynamicLoginTitle.style.webkitTextFillColor = 'transparent'; // Wichtig für Text-Gradient
+                                } catch (e) {
+                                    console.warn("Konnte dynamischen Text-Gradienten nicht erstellen, Fallback auf Vollfarbe:", e);
+                                    dynamicLoginTitle.style.color = baseColor; // Fallback auf Vollfarbe
+                                    dynamicLoginTitle.style.backgroundImage = 'none';
+                                    dynamicLoginTitle.style.webkitTextFillColor = baseColor;
+                                }
+                            } else {
+                                // Fallback auf Standard-Gradient, wenn keine Farbe gesetzt ist
+                                dynamicLoginTitle.style.backgroundImage = `linear-gradient(to right, #FF7F50, #FFD700)`;
+                                dynamicLoginTitle.style.webkitTextFillColor = 'transparent';
+                            }
+                        }
+                        
+                        // Hintergrund-Gradient des Bodys basierend auf Dark Mode Status anwenden
+                        const isDarkModeCurrent = body.classList.contains('dark');
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback auf Standard, falls Einstellungen fehlen
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Dark Mode Klasse zum Body hinzufügen/entfernen basierend auf Flask Session
+                        // Diese Zeile ist redundant, da Flask die Klasse bereits serverseitig setzt.
+                        // Aber es schadet nicht, sie hier zu lassen, falls es clientseitige Logik gibt,
+                        // die darauf angewiesen ist, dass die Klasse nach dem Laden des JS korrekt ist.
+                        if (isDarkModeCurrent) {
+                            body.classList.add('dark');
+                        } else {
+                            body.classList.remove('dark');
+                        }
+
+                        // Logo für Favicon und Login-Container anwenden
+                        if (settings.logo_url) { // logo_url wird von der API bereitgestellt
+                            faviconLink.href = settings.logo_url; // Favicon aktualisieren
+                            if (loginLogo) {
+                                loginLogo.src = settings.logo_url; // Login-Logo aktualisieren
+                            }
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback Favicon
+                            if (loginLogo) {
+                                loginLogo.src = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback Login-Logo
+                            }
+                        }
+
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen/Parsen der App-Einstellungen:', error);
+                }
+            }
+
+            // Initiales Anwenden der App-Einstellungen
+            await applyAppSettings();
+
+            // Dark Mode Toggle Funktionalität
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    // Hier wird die 'dark'-Klasse am Body gesetzt oder entfernt
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+
+                    // Nach dem Umschalten des Dark Modes, App-Einstellungen erneut anwenden
+                    // um die korrekten Hintergrundfarben zu laden, basierend auf dem NEUEN Zustand.
+                    await applyAppSettings(); 
+
+                } catch (error) {
+                    console.error('Fehler beim Umschalten des Dark Mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            // Login Formularübermittlung
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Standard-Formularübermittlung verhindern
+
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch('{{ url_for("auth.login") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        if (data.success) {
+                            // Sofortige Weiterleitung bei erfolgreichem Login
+                            if (data.redirect_to_setup) {
+                                window.location.href = '{{ url_for("auth.admin_setup") }}';
+                            } else {
+                                window.location.href = '{{ url_for("general.home") }}';
+                            }
+                        } else {
+                            displayInlineMessage(data.message, 'error');
+                        }
+                    } else {
+                        // Nicht-2xx-Antworten behandeln (z.B. 401 Unauthorized)
+                        displayInlineMessage(data.message || 'Ein unbekannter Fehler ist aufgetreten.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Login-Fehler:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', 'error');
+                }
+            });
+
+            // Passwort anzeigen/ausblenden Funktionalität
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('passwordToggle');
+
+            passwordToggle.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                // Icon umschalten
+                if (type === 'password') {
+                    passwordToggle.innerHTML = `<i class="fi fi-rr-eye"></i>`;
+                } else {
+                    passwordToggle.innerHTML = `<i class="fi fi-rr-eye-crossed"></i>`;
+                }
+            });
+
+            // Service Worker Registrierung
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

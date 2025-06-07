@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leere Bewertungsbögen drucken</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark {
+            color: #e2e8f0;
+        }
+        .dark .bg-white {
+            background-color: #000000;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        .dark .bg-amber-50 {
+            background-color: #1c1c1c;
+            color: #e2e8f0;
+        }
+        .dark .text-gray-700 {
+            color: #ffffff;
+        }
+        .dark .border {
+            border-color: #555555;
+        }
+        .dark .focus\:ring-orange-400:focus {
+            --tw-ring-color: #fbd38d;
+        }
+        .dark .bg-orange-500 {
+            background-color: #c05621;
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #9c4221;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #4299e1;
+        }
+        .dark .bg-gray-200 {
+            background-color: #1c1c1c;
+        }
+        .dark .text-gray-700 {
+            color: #e2e8f0;
+        }
+        .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #4a5568;
+        }
+        .dark .hover\:bg-gray-50:hover {
+            background-color: #1a202c;
+        }
+        .dark input[type="text"],
+        .dark input[type="number"],
+        .dark textarea,
+        .dark select {
+            background-color: #1c1c1c;
+            color: #ffffff;
+            border-color: #555555;
+        }
+        .dark input[type="text"]::placeholder,
+        .dark input[type="number"]::placeholder,
+        .dark textarea::placeholder {
+            color: #aaaaaa;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Inline Message Styling */
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            border-width: 1px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .message-box.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message-box.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .message-box.info {
+            background-color: #cce5ff;
+            color: #004085;
+            border-color: #b8daff;
+        }
+
+        .dark .message-box.success {
+            background-color: #0f5132;
+            color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .dark .message-box.error {
+            background-color: #721c24;
+            color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .dark .message-box.info {
+            background-color: #004085;
+            color: #cce5ff;
+            border-color: #1a5a9a;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl relative pt-20">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Leere Bewertungsbögen drucken</h2>
+        <p class="text-l font-bold mb-6 text-center text-gray-800">Alle bewerungsbögen sind die Selben...</p>
+
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="message-box" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        <div id="loadingIndicator" class="loading-spinner"></div>
+        <p id="noStandsMessage" class="text-center text-gray-600 hidden">Es sind noch keine Stände vorhanden.</p>
+
+        <div id="standsTableContainer" class="overflow-x-auto hidden">
+            <table class="min-w-full bg-white dark:bg-black rounded-lg shadow-md overflow-hidden">
+                <thead class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Stand</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Beschreibung</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Raum</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="standsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {# Stands will be dynamically loaded here by JavaScript #}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('general.home') }}"
+               class="text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inlineMessage');
+            const messageText = document.getElementById('inlineMessageText');
+
+            if (!messageBox || !messageText) {
+                console.error('Message box elements not found. Cannot display message:', message);
+                return;
+            }
+
+            messageText.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else if (type === 'info') {
+                messageBox.classList.add('info');
+            }
+
+            // Hide the message after 'duration' milliseconds
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Should match CSS transition duration
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const standsTableContainer = document.getElementById('standsTableContainer');
+            const standsTableBody = document.getElementById('standsTableBody');
+            const noStandsMessage = document.getElementById('noStandsMessage');
+            const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
+
+            // Function to update the Dark Mode button appearance (CSS handles actual styling)
+            function updateButtonAppearance() {
+                // This function is now simpler as the icons are directly in the HTML
+                // and the class `dark` on the body handles the styling.
+            }
+
+            // Set initial state of Dark Mode button (handled by Flask's dark_mode_enabled in body class)
+            updateButtonAppearance();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    await applyAppSettings(); // Re-apply settings to update background and logo
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            // Function to fetch and apply app settings
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark'); // Get current dark mode state from body class
+
+                        // Apply background gradient based on current mode
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Apply logo to favicon
+                        if (settings.logo_url) { // Use logo_url provided by the API
+                            faviconLink.href = settings.logo_url; // Update favicon
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback
+                        }
+
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            // Call to fetch and apply app settings initially
+            await applyAppSettings();
+
+
+            // Function to fetch and render stands for blank evaluations
+            async function fetchAndRenderStands() {
+                loadingIndicator.classList.remove('hidden');
+                standsTableContainer.classList.add('hidden');
+                noStandsMessage.classList.add('hidden');
+                standsTableBody.innerHTML = ''; // Clear previous data
+
+                try {
+                    const response = await fetch('/api/blank_evaluations');
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        let errorMessage = 'Ein unbekannter Fehler ist beim Laden der Stände aufgetreten.';
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.message || errorMessage;
+                        } catch (parseError) {
+                            errorMessage = `Serverfehler (${response.status} ${response.statusText}): Die Antwort war kein gültiges JSON. Möglicherweise ist Ihre Sitzung abgelaufen.`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    const data = await response.json();
+
+                    if (data.success && data.stands.length > 0) {
+                        data.stands.forEach(stand => {
+                            const row = document.createElement('tr');
+                            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-150';
+                            row.innerHTML = `
+                                <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-300">${stand.name}</td>
+                                <td class="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">${stand.description || 'N/A'}</td>
+                                <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">${stand.room_name || 'N/A'}</td>
+                                <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">
+                                    <button data-stand-id="${stand.id}"
+                                            class="print-template-btn inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-xs
+                                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                        <span class="mr-1"><i class="fi fi-rr-print"></i></span>
+                                        Drucken
+                                    </button>
+                                </td>
+                            `;
+                            standsTableBody.appendChild(row);
+                        });
+                        standsTableContainer.classList.remove('hidden');
+                    } else {
+                        noStandsMessage.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Stände:', error);
+                    displayInlineMessage(`Ein unerwarteter Fehler ist beim Laden der Stände aufgetreten: ${error.message}`, 'error');
+                    noStandsMessage.classList.remove('hidden'); // Show message even on error
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+                attachPrintButtonListeners();
+            }
+
+            function attachPrintButtonListeners() {
+                document.querySelectorAll('.print-template-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const standId = event.currentTarget.dataset.standId;
+                        if (standId) {
+                            // KORRIGIERT: Öffnet die HTML-Rendering-Route
+                            window.open(`{{ url_for('evaluations.render_print_evaluation_template', stand_id=0) }}`.replace('/0', `/${standId}`), '_blank');
+                        } else {
+                            displayInlineMessage('Fehler: Keine Stand-ID gefunden.', 'error');
+                        }
+                    });
+                });
+            }
+
+            // Initial fetch and render of stands
+            fetchAndRenderStands();
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

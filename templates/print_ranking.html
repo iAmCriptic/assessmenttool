@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rangliste drucken</title>
+    <link href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Stile für die Druckansicht */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background for screen */
+            margin: 0;
+            padding: 20mm; /* A4-Ränder */
+            box-sizing: border-box;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            min-height: 100vh;
+        }
+
+        /* Dark Mode styles */
+        body.dark {
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+        }
+        .dark .container {
+            background-color: #000000; /* Black background for content */
+            color: #e2e8f0;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .border-gray-300 {
+            border-color: #4a5568;
+        }
+        .dark .bg-gray-100 {
+            background-color: #2d3748;
+        }
+        .dark .text-gray-700 {
+            color: #cbd5e0;
+        }
+        .dark .score-line {
+            border-bottom-color: #718096;
+        }
+        .dark .bg-blue-600 {
+            background-color: #3182ce;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #2b6cb0;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #4299e1;
+        }
+        .dark .loading-spinner {
+            border-top-color: #e2e8f0;
+            border-left-color: #e2e8f0;
+            border-bottom-color: #e2e8f0;
+            border-right-color: transparent;
+        }
+
+
+        /* A4-Format für den Druck */
+        @page {
+            size: A4;
+            margin: 10mm; /* Reduzierte Ränder für mehr Platz */
+        }
+
+        /* Nur für den Druck: Elemente ausblenden, die nicht gedruckt werden sollen */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #ffffff; /* Weißer Hintergrund für den Druck */
+                font-size: 10pt; /* Kleinere Basisschriftgröße für den Druck */
+            }
+            .no-print {
+                display: none !important;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 10mm; /* Reduziertes Padding im Container */
+            }
+            .header {
+                margin-bottom: 10mm; /* Reduzierter Abstand nach dem Header */
+            }
+            .header img {
+                max-width: 100px; /* Kleineres Logo */
+                margin-bottom: 5mm;
+            }
+            .header h1 {
+                font-size: 1.5rem; /* Kleinere Überschrift */
+            }
+            .section-title {
+                font-size: 1.2rem; /* Kleinere Sektionsüberschriften */
+                margin-bottom: 0.5rem;
+                padding-bottom: 0.2rem;
+                border-bottom: 1px solid #000; /* Dünnere Linie */
+            }
+            .info-item {
+                margin-bottom: 0.2rem; /* Weniger Abstand zwischen Info-Items */
+                font-size: 9pt; /* Kleinere Schrift für Info-Items */
+            }
+            .ranking-table { /* Changed from criteria-table */
+                margin-top: 0.5rem; /* Weniger Abstand vor der Tabelle */
+            }
+            .ranking-table th, /* Changed from criteria-table */
+            .ranking-table td { /* Changed from criteria-table */
+                padding: 0.3rem 0.5rem; /* Kompaktere Zellenpolsterung */
+                font-size: 9pt; /* Kleinere Schrift in der Tabelle */
+                border: 1px solid #ccc; /* Hellere Linien */
+            }
+            .ranking-table th { /* Changed from criteria-table */
+                background-color: #f0f0f0; /* Hellerer Hintergrund für Header */
+            }
+            .score-line {
+                border-bottom: 1px solid #000; /* Dünnere schwarze Linie für den Druck */
+            }
+            .flex.justify-end.items-baseline {
+                margin-top: 1rem; /* Weniger Abstand vor der Gesamtpunktzahl */
+            }
+            .flex.justify-end.items-baseline p {
+                font-size: 1.1rem; /* Kleinere Schrift für Gesamtpunktzahl */
+            }
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 210mm; /* A4 width */
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header img {
+            max-width: 150px;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .info-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .ranking-table { /* Changed from criteria-table */
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .ranking-table th, /* Changed from criteria-table */
+        .ranking-table td { /* Changed from criteria-table */
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .ranking-table th { /* Changed from criteria-table */
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+
+        .score-line {
+            display: inline-block;
+            width: 100px; /* Adjust as needed */
+            border-bottom: 2px dashed #999; /* Dotted line for screen */
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="{{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="container">
+        <div class="header">
+            <img id="companyLogo" src="" alt="Company Logo" class="mx-auto mb-4"> {# Removed default src, will be set by JS #}
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Rangliste</h1>
+            <p class="text-gray-600">Druckansicht</p>
+        </div>
+
+        <div id="loadingIndicator" class="loading-spinner"></div>
+        <div id="errorMessage" class="text-red-600 text-center hidden"></div>
+
+        <div id="content" class="hidden">
+            <div class="mb-6">
+                <h2 class="section-title text-gray-800">Aktuelle Rangliste</h2>
+                {# Removed individual info items as they are not needed for ranking print #}
+            </div>
+
+            <div class="mb-6">
+                <table class="ranking-table"> {# Changed class from criteria-table #}
+                    <thead>
+                        <tr>
+                            <th class="text-gray-700">Platz</th>
+                            <th class="text-gray-700">Standname</th>
+                            <th class="text-gray-700">Punktzahl</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingTableBody">
+                        {# Dynamically populated by JavaScript #}
+                    </tbody>
+                </table>
+            </div>
+
+            {# Removed total score summary as it's part of the table now #}
+
+            <div class="mt-8 text-center no-print">
+                <button onclick="window.print()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                               transition duration-200 ease-in-out transform hover:scale-105">
+                    Seite drucken / als PDF speichern
+                </button>
+                <a href="{{ url_for('ranking.view_ranking_page') }}"
+                   class="ml-4 text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                    Zurück zur Rangliste
+                </a>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const contentDiv = document.getElementById('content');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessageDiv = document.getElementById('errorMessage');
+            const rankingTableBody = document.getElementById('rankingTableBody'); // Changed ID
+            const companyLogo = document.getElementById('companyLogo'); // Get the image element
+
+            // Function to display messages
+            function displayPageMessage(message, type = 'error') {
+                loadingIndicator.classList.add('hidden');
+                errorMessageDiv.textContent = message;
+                errorMessageDiv.classList.remove('hidden');
+                if (type === 'success') {
+                    errorMessageDiv.style.color = 'green';
+                } else {
+                    errorMessageDiv.style.color = 'red';
+                }
+                contentDiv.classList.add('hidden'); // Ensure content is hidden on error
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                contentDiv.classList.add('hidden');
+                errorMessageDiv.classList.add('hidden');
+
+                // Fetch admin settings to get the logo URL
+                const settingsResponse = await fetch('/api/admin_settings');
+                if (settingsResponse.ok) {
+                    const settingsResult = await settingsResponse.json();
+                    if (settingsResult.success && settingsResult.settings && settingsResult.settings.logo_url) {
+                        companyLogo.src = settingsResult.settings.logo_url;
+                    } else {
+                        // Fallback to default logo if no custom logo is set
+                        companyLogo.src = "{{ url_for('general.static_files', filename='img/logo_V2.png') }}";
+                    }
+                } else {
+                    console.error('Error fetching admin settings, using default logo.');
+                    companyLogo.src = "{{ url_for('general.static_files', filename='img/logo_V2.png') }}";
+                }
+
+
+                // Fetch ranking data from the API endpoint
+                const response = await fetch('/api/ranking_data'); 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = 'Ein unbekannter Fehler ist beim Laden der Ranglistendaten aufgetreten.';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (parseError) {
+                        console.error('Received non-JSON response:', errorText);
+                        errorMessage = `Serverfehler (${response.status} ${response.statusText}): Die Antwort war kein gültiges JSON.`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.rankings) { 
+                    const rankings = result.rankings;
+
+                    rankingTableBody.innerHTML = ''; // Clear existing rows
+                    if (rankings.length > 0) {
+                        rankings.forEach(rankEntry => { 
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="py-2 px-4 text-gray-700 dark:text-gray-300">${rankEntry.rank}</td>
+                                <td class="py-2 px-4 text-gray-700 dark:text-gray-300">${rankEntry.stand_name}</td>
+                                <td class="py-2 px-4 text-gray-700 dark:text-gray-300">${rankEntry.total_achieved_score}</td>
+                            `;
+                            rankingTableBody.appendChild(row);
+                        });
+                    } else {
+                        // Display a message if no rankings are available
+                        rankingTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-gray-600">Es liegen noch keine Bewertungen vor, um eine Rangliste zu erstellen.</td></tr>`;
+                    }
+
+                    loadingIndicator.classList.add('hidden');
+                    contentDiv.classList.remove('hidden');
+                } else {
+                    displayPageMessage(result.message || 'Rangliste konnte nicht geladen werden.', 'error');
+                }
+
+            } catch (error) {
+                console.error('Fehler beim Abrufen der Ranglistendaten:', error);
+                displayPageMessage(`Fehler: ${error.message}`, 'error');
+            }
+
+            // Service Worker Registration (already present, keep it)
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

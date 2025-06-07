@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verwarnungen</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Body-Stile für Light- und Dark-Mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Standard-Textfarbe für Light Mode Body */
+            color: #1f2937; /* Dunkelgrau/Fast Schwarz */
+        }
+        /* Dark Mode Stile für den Body */
+        body.dark {
+            color: #e2e8f0; /* Hellerer Text für Dark Mode */
+        }
+
+        /* Hauptinhaltsbereich (Main Content Area) */
+        .main-content-area {
+            background-color: #ffffff !important; /* Weißer Hintergrund für Light Mode */
+            color: #1f2937 !important; /* Dunkler Text für Light Mode */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark .main-content-area {
+            background-color: #000000 !important; /* Schwarzer Hintergrund für Dark Mode */
+            color: #e2e8f0 !important; /* Heller Text für Dark Mode */
+        }
+
+        /* Allgemeine Dark Mode Überschreibungen für Textfarben */
+        .dark .text-black {
+            color: #e2e8f0 !important; /* Schwarz wird zu Hell im Dark Mode */
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0 !important; /* Hellere Farbe für Text, der im Light Mode grau-800 ist */
+        }
+        .dark .text-gray-600 {
+            color: #cbd5e0 !important; /* Hellere Farbe für Text, der im Light Mode grau-600 ist */
+        }
+        .dark .text-gray-700 {
+            color: #e2e8f0 !important; /* Hellere Farbe für Text, der im Light Mode grau-700 ist */
+        }
+        .dark .border-gray-200 { /* Standard Border für Light Mode */
+            border-color: #4a5568 !important; /* Dunklerer Rand im Dark Mode */
+        }
+        /* Spezifische Anpassung für den äußeren Rahmen der Tabelle/Karten-Gruppe */
+        .border-white-light-mode {
+            border-color: #ffffff !important; /* Weißer Rand im Light Mode */
+        }
+        .dark .border-white-light-mode {
+            border-color: #4a5568 !important; /* Dunklerer Rand im Dark Mode für Elemente, die im Light Mode weiß sind */
+        }
+
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Formular- und Tabellenhintergründe im Dark Mode */
+        .dark .bg-white { /* Hintergrund für Formular und ungerade Tabellenzeilen */
+            background-color: #1a1a1a !important; /* Sehr dunkles Grau/Fast Schwarz */
+        }
+        .dark .bg-gray-50 { /* Hintergrund für gerade Tabellenzeilen */
+            background-color: #222222 !important; /* Etwas helleres Dunkelgrau */
+        }
+        /* Anpassung für den Hintergrund der Standgruppen-Container */
+        .stand-group-bg {
+            background-color: #ffffff !important; /* Weißer Hintergrund für Light Mode */
+        }
+        .dark .stand-group-bg {
+            background-color: #0a0a0a !important; /* Sehr dunkles Grau für Dark Mode */
+        }
+
+        .dark .bg-gray-200 { /* Hintergrund für Tabellenüberschriften */
+            background-color: #2d3748 !important; /* Dunkelgrau */
+        }
+        .dark .hover\:bg-gray-50:hover,
+        .dark .hover\:bg-gray-100:hover { /* Hover-Effekt für Tabellenzeilen */
+            background-color: #2d3748 !important;
+        }
+
+        /* Inputfelder und Textareas */
+        .dark input[type="text"],
+        .dark textarea,
+        .dark select {
+            background-color: #1c1c1c !important;
+            color: #ffffff !important;
+            border-color: #555555 !important;
+        }
+        .dark input[type="text"]::placeholder,
+        .dark textarea::placeholder {
+            color: #aaaaaa !important;
+        }
+
+        /* Button/Link Farben (konsistent mit room_inspections.html) */
+        .dark .text-blue-600 {
+            color: #63b3ed !important;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4 !important;
+        }
+        .dark .bg-blue-600 { /* Für Modal-Schließen-Button */
+            background-color: #4299e1 !important;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #63b3ed !important;
+        }
+
+        /* Orange Buttons (Verwarnung eintragen) */
+        .dark .bg-orange-500 {
+            background-color: #ea580c !important;
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #c2410c !important;
+        }
+
+        /* Grüne Buttons (Gültig machen) */
+        .dark .bg-green-600 {
+            background-color: #48bb78 !important;
+        }
+        .dark .hover\:bg-green-700:hover {
+            background-color: #38a169 !important;
+        }
+
+        /* Rote Buttons (Ungültig machen) */
+        .dark .bg-red-600 {
+            background-color: #e53e3e !important;
+        }
+        .dark .hover\:bg-red-700:hover {
+            background-color: #c53030 !important;
+        }
+
+        /* Graue Buttons (Abbrechen) */
+        .dark .bg-gray-300 {
+            background-color: #4a5568 !important;
+            color: #e2e8f0 !important;
+        }
+        .dark .hover\:bg-gray-400:hover {
+            background-color: #636b7d !important;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        /* Sicherstellen, dass das Icon im Dark Mode Toggle sichtbar ist */
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit !important;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Inline Message Styles (kopiert von room_inspections.html) */
+        .inline-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            min-width: 300px;
+            text-align: center;
+        }
+        .inline-message.show {
+            opacity: 1;
+        }
+        .inline-message.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .inline-message.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .inline-message.info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .dark .inline-message.success {
+            background-color: #2f855a;
+            border-color: #38a169;
+            color: #e6fffa;
+        }
+        .dark .inline-message.error {
+            background-color: #c53030;
+            border-color: #e53e3e;
+            color: #fed7d7;
+        }
+        .dark .inline-message.info {
+            background-color: #2b6cb0;
+            border-color: #4299e1;
+            color: #ebf8ff;
+        }
+
+        /* Modal Styles (angepasst für Konsistenz) */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparenter Hintergrund */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50; /* Über allen anderen Inhalten */
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .dark .modal-content {
+            background-color: #1a1a1a !important; /* Dunklerer Modal-Hintergrund */
+            color: #e2e8f0 !important;
+        }
+        .dark .modal-content .text-gray-800 { /* Modal-Titel */
+            color: #e2e8f0 !important;
+        }
+        .dark .modal-content .text-gray-700 { /* Modal-Text */
+            color: #a0aec0 !important;
+        }
+
+        /* Responsive Kommentare */
+        .comment-cell {
+            position: relative;
+            cursor: pointer; /* Zeigt an, dass es klickbar ist */
+        }
+
+        /* Vollständiges Kommentar-Modal */
+        #fullCommentModal {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        #fullCommentModal > div {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive Design für Tabelle vs. Karten */
+        /* Standardmäßig (mobil zuerst): Tabelle versteckt, Karten sichtbar */
+        #warningsTableContainer {
+            display: none; /* Tabelle auf kleinen Bildschirmen verstecken */
+        }
+
+        #warningsCardsContainer {
+            display: grid; /* Karten auf kleinen Bildschirmen sichtbar */
+            grid-template-columns: 1fr; /* Eine Spalte für Karten */
+            gap: 1rem; /* Abstand zwischen den Karten */
+        }
+
+        /* Bei mittleren Bildschirmen (md) und größer: Tabelle sichtbar, Karten versteckt */
+        @media (min-width: 768px) { /* md breakpoint in Tailwind CSS */
+            #warningsTableContainer {
+                display: block; /* Tabelle anzeigen */
+            }
+            #warningsCardsContainer {
+                display: none; /* Karten verstecken */
+            }
+        }
+
+        /* Anpassung für gleich große Buttons in Aktionen */
+        .action-buttons-group {
+            display: flex;
+            gap: 0.5rem; /* Abstand zwischen den Buttons */
+            flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Bildschirmen */
+        }
+        .action-buttons-group button {
+            flex: 1 1 auto; /* Buttons nehmen verfügbaren Platz ein und brechen um */
+            white-space: nowrap; /* Verhindert Zeilenumbruch im Button-Text */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div id="inline-message-container" class="inline-message"></div>
+
+    <div id="mainContentArea" class="main-content-area p-8 rounded-lg shadow-md w-full max-w-4xl relative pt-20 border border-gray-200">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0 p-4">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0 p-4">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h2 id="mainTitle" class="text-3xl font-bold mb-6 text-center text-black">Verwarnungen</h2>
+
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="inline-message" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        {# Formular zum Hinzufügen einer neuen Verwarnung #}
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Neue Verwarnung hinzufügen</h3>
+            <form id="addWarningForm" class="space-y-4">
+                <div>
+                    <label for="stand_id" class="block text-gray-700 text-sm font-semibold mb-2">Stand auswählen:</label>
+                    <select id="stand_id" name="stand_id" required
+                            class="shadow-sm border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out">
+                        <option value="">Bitte Stand auswählen</option>
+                        {# Stands will be loaded dynamically by JavaScript #}
+                    </select>
+                </div>
+                <div>
+                    <label for="comment" class="block text-gray-700 text-sm font-semibold mb-2">Kommentar:</label>
+                    <textarea id="comment" name="comment" rows="3" required
+                              class="shadow-sm border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out"
+                              placeholder="Geben Sie hier Ihre Verwarnung ein..."></textarea>
+                </div>
+                <button type="submit"
+                        class="w-full flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                    <span class="mr-2"><i class="fi fi-rr-exclamation"></i></span>
+                    Verwarnung eintragen
+                </button>
+            </form>
+        </div>
+
+        {# Container für die Verwarnungsliste #}
+        <div id="warningsListContainer" class="space-y-6">
+            <p id="noWarningsMessage" class="text-center text-gray-600 hidden">Es liegen noch keine Verwarnungen vor.</p>
+            
+            {# Container für die Tabelle (nur auf größeren Bildschirmen sichtbar) #}
+            <div id="warningsTableContainer" class="overflow-x-auto hidden md:block">
+                {# Verwarnungstabelle wird hier dynamisch per JavaScript geladen #}
+            </div>
+
+            {# Container für die Karten (nur auf kleineren Bildschirmen sichtbar) #}
+            <div id="warningsCardsContainer" class="grid grid-cols-1 gap-4 md:hidden">
+                {# Verwarnungskarten werden hier dynamisch per JavaScript geladen #}
+            </div>
+        </div>
+
+        {# Invalidation Details Modal #}
+        <div id="invalidationDetailsModal" class="modal hidden">
+            <div class="modal-content p-6 rounded-lg shadow-xl">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">Details zur Invalidierung</h3>
+                <p class="text-gray-700 mb-2">
+                    <span class="font-semibold">Invalidiert von:</span> <span id="detailsInvalidatedBy"></span>
+                </p>
+                <p class="text-gray-700 mb-2">
+                    <span class="font-semibold">Datum:</span> <span id="detailsInvalidationTimestamp"></span>
+                </p>
+                <p class="text-gray-700 mb-4">
+                    <span class="font-semibold">Kommentar:</span> <span id="detailsInvalidationComment"></span>
+                </p>
+                <button onclick="closeInvalidationDetailsModal()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                               transition duration-200 ease-in-out transform hover:scale-105">
+                    Schließen
+                </button>
+            </div>
+        </div>
+
+        {# Modal für Ungültig machen #}
+        <div id="invalidateWarningModal" class="modal hidden">
+            <div class="modal-content p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">Verwarnung ungültig machen</h3>
+                <p class="mb-4 text-gray-700">Sind Sie sicher, dass Sie diese Verwarnung ungültig machen möchten? Bitte geben Sie einen Grund an.</p>
+                <textarea id="invalidateCommentInput" rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4" placeholder="Grund für die Ungültigkeitserklärung..."></textarea>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeInvalidateWarningModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out">
+                        Abbrechen
+                    </button>
+                    <button id="confirmInvalidateBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out">
+                        Bestätigen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# Modal für Gültig machen #}
+        <div id="makeValidWarningModal" class="modal hidden">
+            <div class="modal-content p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">Verwarnung gültig machen</h3>
+                <p class="mb-4 text-gray-700">Sind Sie sicher, dass Sie diese Verwarnung wieder gültig machen möchten?</p>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeMakeValidWarningModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out">
+                        Abbrechen
+                    </button>
+                    <button id="confirmMakeValidBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 ease-in-out">
+                        Bestätigen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# Vollständiges Kommentar-Modal #}
+        <div id="fullCommentModal" class="modal hidden">
+            <div id="modalContent" class="modal-content p-6 rounded-lg shadow-xl max-w-lg w-full m-4 relative">
+                <button id="closeCommentModal" class="absolute top-3 right-3 text-2xl font-bold text-gray-700 hover:text-gray-900">&times;</button>
+                <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800">Vollständiger Kommentar</h3>
+                <p id="modalCommentText" class="whitespace-pre-wrap text-gray-700"></p>
+            </div>
+        </div>
+
+
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('general.home') }}"
+               class="text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out dark:text-blue-400 dark:hover:text-blue-200">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Funktion zum Anzeigen von Inline-Nachrichten (Angepasst an home.html)
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inline-message-container');
+            let messageText = messageBox.querySelector('p');
+            if (!messageText) {
+                messageText = document.createElement('p');
+                messageBox.appendChild(messageText);
+            }
+
+            messageBox.classList.remove('success', 'error', 'info'); // Alte Klassen entfernen
+            messageText.textContent = message;
+            messageBox.classList.add('show', type); // 'show' und den spezifischen Typ hinzufügen
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Sollte zur CSS-Übergangsdauer passen
+            }, duration);
+        }
+
+        // Function to format datetime
+        function formatDatetime(value) {
+            if (value) {
+                try {
+                    const dt_object = new Date(value);
+                    const day = String(dt_object.getDate()).padStart(2, '0');
+                    const month = String(dt_object.getMonth() + 1).padStart(2, '0');
+                    const hours = String(dt_object.getHours()).padStart(2, '0');
+                    const minutes = String(dt_object.getMinutes()).padStart(2, '0');
+                    return `${day}.${month}. - ${hours}:${minutes}`;
+                } catch (e) {
+                    return value; // Fallback if format is invalid
+                }
+            }
+            return 'N/A';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const mainContentArea = document.getElementById('mainContentArea');
+            const mainTitle = document.getElementById('mainTitle');
+            const addWarningForm = document.getElementById('addWarningForm');
+            const standSelect = document.getElementById('stand_id');
+            const commentInput = document.getElementById('comment');
+            const warningsListContainer = document.getElementById('warningsListContainer');
+            const noWarningsMessage = document.getElementById('noWarningsMessage');
+            const faviconLink = document.getElementById('faviconLink');
+
+            const warningsTableContainer = document.getElementById('warningsTableContainer'); // New
+            const warningsCardsContainer = document.getElementById('warningsCardsContainer'); // New
+
+            const invalidationDetailsModal = document.getElementById('invalidationDetailsModal');
+            const detailsInvalidatedBy = document.getElementById('detailsInvalidatedBy');
+            const detailsInvalidationTimestamp = document.getElementById('detailsInvalidationTimestamp');
+            const detailsInvalidationComment = document.getElementById('detailsInvalidationComment');
+
+            const invalidateWarningModal = document.getElementById('invalidateWarningModal');
+            const invalidateCommentInput = document.getElementById('invalidateCommentInput');
+            const confirmInvalidateBtn = document.getElementById('confirmInvalidateBtn');
+
+            const makeValidWarningModal = document.getElementById('makeValidWarningModal');
+            const confirmMakeValidBtn = document.getElementById('confirmMakeValidBtn');
+
+            const fullCommentModal = document.getElementById('fullCommentModal'); // New
+            const closeCommentModalBtn = document.getElementById('closeCommentModal'); // New
+            const modalCommentText = document.getElementById('modalCommentText'); // New
+
+
+            // Function to update the Dark Mode button appearance
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>';
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>';
+            }
+
+            // Set initial state of Dark Mode button
+            updateButtonAppearance();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                        mainTitle.classList.remove('text-black');
+                        mainTitle.classList.add('dark:text-white');
+                    } else {
+                        body.classList.remove('dark');
+                        mainTitle.classList.remove('dark:text-white');
+                        mainTitle.classList.add('text-black');
+                    }
+                    updateButtonAppearance();
+                    await applyAppSettings(); // Re-apply settings to update background
+                    fetchAndRenderWarnings(); // Re-render warnings to apply new colors
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            // Function to fetch and apply app settings
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark'); // Get current dark mode state from body class
+
+                        // Apply background gradient based on current mode
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Apply logo to favicon
+                        if (settings.logo_url) {
+                            faviconLink.href = settings.logo_url;
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+
+            // Function to fetch and render warnings
+            async function fetchAndRenderWarnings() {
+                try {
+                    // Corrected URL: changed "warnings data" to "warnings_data"
+                    const response = await fetch('/warnings/api/warnings_data');
+                    const data = await response.json();
+
+                    const isBodyDark = body.classList.contains('dark'); // Get current dark mode state for rendering
+
+                    if (data.success) { // Changed condition: always populate dropdown if successful
+                        // Populate stand dropdown
+                        standSelect.innerHTML = '<option value="">Bitte Stand auswählen</option>';
+                        data.stands_for_dropdown.forEach(stand => {
+                            const option = document.createElement('option');
+                            option.value = stand.id;
+                            option.textContent = stand.name;
+                            standSelect.appendChild(option);
+                        });
+
+                        if (data.grouped_warnings.length > 0) {
+                            noWarningsMessage.classList.add('hidden'); // Hide if there are warnings
+                            warningsTableContainer.innerHTML = ''; // Clear previous content
+                            warningsCardsContainer.innerHTML = ''; // Clear previous content
+
+                            // Dynamic classes for table/cards with Tailwind dark: prefixes
+                            const tableBgClass = isBodyDark ? 'bg-black' : 'bg-white';
+                            const tableHeaderBgClass = isBodyDark ? 'bg-gray-800' : 'bg-gray-200';
+                            const tableHeaderTextClass = isBodyDark ? 'text-white' : 'text-gray-700';
+                            const tableDividerClass = isBodyDark ? 'divide-gray-700' : 'divide-gray-200';
+                            const tableRowHoverClass = isBodyDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50';
+                            const cellTextColor = isBodyDark ? 'text-white' : 'text-gray-900';
+                            const subTextColor = isBodyDark ? 'text-gray-400' : 'text-gray-700';
+                            const readMoreLinkClass = isBodyDark ? 'text-blue-400 hover:text-blue-200' : 'text-blue-500 hover:underline';
+
+
+                            let tableHtml = `
+                                <table class="min-w-full ${tableBgClass} border border-white-light-mode dark:border-gray-600 rounded-lg shadow-md overflow-hidden">
+                                    <thead>
+                                        <tr>
+                                            <th class="py-2 px-4 ${tableHeaderBgClass} text-left text-xs font-semibold ${tableHeaderTextClass} uppercase tracking-wider border-b border-gray-200 dark:border-gray-600">Datum/Zeit</th>
+                                            <th class="py-2 px-4 ${tableHeaderBgClass} text-left text-xs font-semibold ${tableHeaderTextClass} uppercase tracking-wider border-b border-gray-200 dark:border-gray-600">Verwarner</th>
+                                            <th class="py-2 px-4 ${tableHeaderBgClass} text-left text-xs font-semibold ${tableHeaderTextClass} uppercase tracking-wider border-b border-gray-200 dark:border-gray-600">Kommentar</th>
+                                            <th class="py-2 px-4 ${tableHeaderBgClass} text-left text-xs font-semibold ${tableHeaderTextClass} uppercase tracking-wider border-b border-gray-200 dark:border-gray-600">Status</th>
+                                            <th class="py-2 px-4 ${tableHeaderBgClass} text-left text-xs font-semibold ${tableHeaderTextClass} uppercase tracking-wider border-b border-gray-200 dark:border-gray-600">Aktionen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y ${tableDividerClass}">
+                            `;
+
+                            let cardsHtml = '';
+
+                            data.grouped_warnings.forEach(group => {
+                                // Table group header
+                                tableHtml += `
+                                    <tr class="stand-group-bg border-b border-white-light-mode dark:border-gray-700"> {# Added stand-group-bg #}
+                                        <td colspan="5" class="py-2 px-4 text-lg font-bold text-gray-800 dark:text-e2e8f0">
+                                            ${group.stand_name}
+                                            <span class="text-sm text-gray-600 dark:text-a0aec0">(${group.total_warnings} gültige Verwarnungen)</span>
+                                        </td>
+                                    </tr>
+                                `;
+
+                                // Card group header (for mobile)
+                                cardsHtml += `
+                                    <div class="stand-group-bg p-4 rounded-lg shadow-md border border-white-light-mode dark:border-gray-700"> {# Added stand-group-bg #}
+                                        <h4 class="text-lg font-bold text-gray-800 dark:text-e2e8f0 mb-2">
+                                            ${group.stand_name}
+                                            <span class="text-sm text-gray-600 dark:text-a0aec0">(${group.total_warnings} gültige Verwarnungen)</span>
+                                        </h4>
+                                        <div class="space-y-4">
+                                `;
+
+                                group.warnings.forEach((warning, index) => {
+                                    const rowClass = index % 2 === 0 ? `bg-white ${tableRowHoverClass}` : `bg-gray-50 ${tableRowHoverClass}`;
+                                    const statusColorClass = warning.is_invalidated ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+                                    const statusText = warning.is_invalidated ? 
+                                        `<span class="${statusColorClass} font-semibold">Ungültig</span>` : 
+                                        `<span class="${statusColorClass} font-semibold">Gültig</span>`;
+                                    
+                                    const invalidationDetailsButton = warning.is_invalidated ?
+                                        `<button class="${readMoreLinkClass} text-xs ml-2" 
+                                            onclick="showInvalidationDetails('${warning.invalidated_by_user_name}', '${formatDatetime(warning.invalidation_timestamp)}', '${warning.invalidation_comment.replace(/'/g, "\\'")}')">
+                                            (Details)
+                                        </button>` : '';
+
+                                    const actionButtons = warning.is_invalidated ? 
+                                        `<button data-warning-id="${warning.id}" class="make-valid-btn bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 ease-in-out">Gültig machen</button>` : 
+                                        `<button data-warning-id="${warning.id}" class="invalidate-btn bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out">Ungültig machen</button>`;
+
+                                    const commentDisplay = warning.comment.length > 50 ? warning.comment.substring(0, 50) + '...' : warning.comment;
+                                    const commentToggle = warning.comment.length > 50 ? `<button class="${readMoreLinkClass} text-xs ml-2 toggle-comment" data-full-comment="${warning.comment.replace(/'/g, "\\'")}">${isBodyDark ? 'Mehr/Weniger' : 'Mehr/Weniger'}</button>` : '';
+
+
+                                    // Tabellenzeile
+                                    tableHtml += `
+                                        <tr class="${rowClass} transition-colors duration-150 border-b border-gray-200 dark:border-gray-600">
+                                            <td class="py-2 px-4 ${subTextColor} text-sm">${formatDatetime(warning.timestamp)}</td>
+                                            <td class="py-2 px-4 ${subTextColor} text-sm">${warning.warner_name}</td>
+                                            <td class="py-2 px-4 ${subTextColor} text-sm">
+                                                <span>${commentDisplay}</span>
+                                                ${commentToggle}
+                                            </td>
+                                            <td class="py-2 px-4 ${subTextColor} text-sm">${statusText} ${invalidationDetailsButton}</td>
+                                            <td class="py-2 px-4 ${subTextColor} text-sm">
+                                                <div class="action-buttons-group">
+                                                    ${actionButtons}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+
+                                    // Karte für die mobile Ansicht
+                                    cardsHtml += `
+                                        <div class="${tableBgClass} rounded-lg shadow-md p-4 border border-white-light-mode dark:border-gray-600">
+                                            <p class="${subTextColor} text-sm mb-1"><strong>Datum/Zeit:</strong> ${formatDatetime(warning.timestamp)}</p>
+                                            <p class="${subTextColor} text-sm mb-1"><strong>Verwarner:</strong> ${warning.warner_name}</p>
+                                            <p class="${subTextColor} text-sm mb-1">
+                                                <strong>Kommentar:</strong> <span>${commentDisplay}</span>
+                                                ${commentToggle}
+                                            </p>
+                                            <p class="${subTextColor} text-sm mb-2"><strong>Status:</strong> ${statusText} ${invalidationDetailsButton}</p>
+                                            <div class="action-buttons-group">
+                                                ${actionButtons}
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                cardsHtml += `</div></div>`; // Close space-y-4 and stand-group-bg div for cards
+                            });
+
+                            tableHtml += `</tbody></table>`;
+                            warningsTableContainer.innerHTML = tableHtml;
+                            warningsCardsContainer.innerHTML = cardsHtml;
+
+
+                            // Event-Listener für Update-Buttons nach dem Rendern anhängen
+                            attachWarningActionListeners();
+                            // Event-Listener für die Kommentar-Anzeige anhängen
+                            attachCommentListeners(); // Re-use or adapt for new comment toggle
+                            
+                        } else {
+                            warningsTableContainer.innerHTML = '';
+                            warningsCardsContainer.innerHTML = '';
+                            noWarningsMessage.classList.remove('hidden'); // Show if no warnings
+                        }
+                    } else { // If data.success is false
+                        displayInlineMessage(data.message || 'Fehler beim Laden der Verwarnungsdaten.', 'error');
+                        warningsTableContainer.innerHTML = '';
+                        warningsCardsContainer.innerHTML = '';
+                        noWarningsMessage.classList.remove('hidden'); // Show message if API call was unsuccessful
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Verwarnungen:', error);
+                    // Display a more specific message if the error is a SyntaxError due to bad JSON
+                    if (error instanceof SyntaxError) {
+                         displayInlineMessage('Ein unerwarteter Fehler ist beim Laden der Verwarnungen aufgetreten: Ungültige Serverantwort (erwartete JSON, erhielt HTML).', 'error');
+                    } else {
+                         displayInlineMessage('Ein unerwarteter Fehler ist beim Laden der Verwarnungen aufgetreten.', 'error');
+                    }
+                   
+                    warningsTableContainer.innerHTML = '';
+                    warningsCardsContainer.innerHTML = '';
+                    noWarningsMessage.classList.remove('hidden'); // Show message if error occurred
+                }
+            }
+
+            // Funktion zum Anhängen von Event-Listenern an Warning Action Buttons
+            function attachWarningActionListeners() {
+                document.querySelectorAll('.invalidate-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const warningId = event.currentTarget.dataset.warningId;
+                        confirmInvalidateBtn.dataset.warningId = warningId;
+                        invalidateCommentInput.value = ''; // Clear previous comment
+                        invalidateWarningModal.classList.remove('hidden');
+                    });
+                });
+
+                document.querySelectorAll('.make-valid-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const warningId = event.currentTarget.dataset.warningId;
+                        confirmMakeValidBtn.dataset.warningId = warningId;
+                        makeValidWarningModal.classList.remove('hidden');
+                    });
+                });
+            }
+
+            // Funktion zum Behandeln der Kommentar-Anzeige (vollständigen Kommentar im Modal anzeigen)
+            function attachCommentListeners() {
+                document.querySelectorAll('.toggle-comment').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent triggering parent click if any
+                        const fullComment = event.currentTarget.dataset.fullComment;
+                        modalCommentText.textContent = fullComment;
+                        fullCommentModal.classList.remove('hidden');
+                    });
+                });
+
+                closeCommentModalBtn.addEventListener('click', () => {
+                    fullCommentModal.classList.add('hidden');
+                });
+
+                // Modal schließen, wenn außerhalb geklickt wird
+                fullCommentModal.addEventListener('click', (event) => {
+                    if (event.target === fullCommentModal) {
+                        fullCommentModal.classList.add('hidden');
+                    }
+                });
+            }
+
+
+            // Handle add warning form submission
+            addWarningForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const standId = standSelect.value;
+                const comment = commentInput.value.trim();
+
+                if (!standId || !comment) {
+                    displayInlineMessage('Bitte wählen Sie einen Stand aus und geben Sie einen Kommentar ein.', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('{{ url_for("warnings.warnings_page") }}', { // POST to warnings route
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            stand_id: standId,
+                            comment: comment
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        commentInput.value = ''; // Clear comment input
+                        standSelect.value = ''; // Clear stand selection
+                        fetchAndRenderWarnings(); // Re-render the list to show new warning
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Hinzufügen der Verwarnung:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten.', 'error');
+                }
+            });
+
+            // Event Listener for "Confirm Invalidate" button in modal
+            confirmInvalidateBtn.addEventListener('click', async () => {
+                const warningId = confirmInvalidateBtn.dataset.warningId;
+                const invalidationComment = invalidateCommentInput.value.trim();
+
+                if (!invalidationComment) {
+                    displayInlineMessage('Bitte geben Sie einen Kommentar für die Ungültigkeitserklärung ein.', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/warnings/invalidate_warning/${warningId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ invalidation_comment: invalidationComment })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        closeInvalidateWarningModal();
+                        fetchAndRenderWarnings(); // Re-render the list
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Invalidieren der Verwarnung:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten.', 'error');
+                }
+            });
+
+            // Event Listener for "Confirm Make Valid" button in modal
+            confirmMakeValidBtn.addEventListener('click', async () => {
+                const warningId = confirmMakeValidBtn.dataset.warningId;
+
+                try {
+                    const response = await fetch(`/warnings/make_warning_valid/${warningId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        closeMakeValidWarningModal();
+                        fetchAndRenderWarnings(); // Re-render the list
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Gültigmachen der Verwarnung:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten.', 'error');
+                }
+            });
+
+
+            // Global functions for modals (needed because of onclick in HTML)
+            window.showInvalidationDetails = (invalidatedBy, timestamp, comment) => {
+                detailsInvalidatedBy.textContent = invalidatedBy;
+                detailsInvalidationTimestamp.textContent = timestamp;
+                detailsInvalidationComment.textContent = comment;
+                invalidationDetailsModal.classList.remove('hidden');
+            };
+
+            window.closeInvalidationDetailsModal = () => {
+                invalidationDetailsModal.classList.add('hidden');
+            };
+
+            window.closeInvalidateWarningModal = () => {
+                invalidateWarningModal.classList.add('hidden');
+            };
+
+            window.closeMakeValidWarningModal = () => {
+                makeValidWarningModal.classList.add('hidden');
+            };
+
+
+            // Initial fetch and render of warnings
+            await applyAppSettings(); // Apply settings first to get correct body class
+            fetchAndRenderWarnings(); // Then fetch and render with correct dark mode status
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

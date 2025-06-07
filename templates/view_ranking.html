@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rangliste</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Body-Stile für Light- und Dark-Mode, angepasst an home.html */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: #1f2937; /* Standardtextfarbe für Light Mode (schwarz) */
+        }
+        /* Die Dark Mode Hintergrundfarben werden nun vollständig über JavaScript gesetzt,
+           basierend auf den Admin-Einstellungen. Die CSS-Klasse 'dark' wird nur für
+           andere Dark Mode-Stile (Textfarben, Box-Schatten etc.) verwendet. */
+        .dark .bg-white {
+            background-color: #000000;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #cbd5e0;
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568;
+        }
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #2d3748;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4;
+        }
+        .dark .bg-blue-600 {
+            background-color: #4299e1;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #63b3ed;
+        }
+        .dark .bg-red-600 {
+            background-color: #e53e3e;
+        }
+        .dark .hover\:bg-red-700:hover {
+            color: #fc8181;
+        }
+        .dark .bg-green-500 {
+            background-color: #48bb78;
+        }
+        .dark .bg-red-500 {
+            background-color: #ef4444;
+        }
+        .dark .bg-yellow-500 {
+            background-color: #f6e05e;
+        }
+
+        /* Inline Message Styles */
+        .inline-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: fixed; /* Fixpositionierung */
+            top: 1rem; /* Abstand vom oberen Rand */
+            left: 50%; /* Zentrierung horizontal */
+            transform: translateX(-50%); /* Exakte Zentrierung */
+            z-index: 1000; /* Über anderen Elementen */
+            min-width: 300px; /* Mindestbreite */
+            text-align: center;
+        }
+        .inline-message.show {
+            opacity: 1;
+        }
+        .inline-message.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .inline-message.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .inline-message.info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .dark .inline-message.success {
+            background-color: #2f855a;
+            border-color: #38a169;
+            color: #e6fffa;
+        }
+        .dark .inline-message.error {
+            background-color: #c53030;
+            border-color: #e53e3e;
+            color: #fed7d7;
+        }
+        .dark .inline-message.info {
+            background-color: #2b6cb0;
+            border-color: #4299e1;
+            color: #ebf8ff;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Light Mode Table Styles */
+        body:not(.dark) .ranking-table {
+            background-color: #ffffff; /* Weißer Hintergrund für die Tabelle im Light Mode */
+            color: #1f2937; /* Dunkler Text für die Tabelle im Light Mode */
+        }
+        body:not(.dark) .ranking-table thead {
+            background-color: #e5e7eb; /* Heller Grau für Tabellenkopf im Light Mode */
+            color: #374151; /* Dunkler Text für Tabellenkopf im Light Mode */
+        }
+        body:not(.dark) .ranking-table tbody tr {
+            background-color: #ffffff; /* Weiß für Tabellenzeilen im Light Mode */
+        }
+        body:not(.dark) .ranking-table tbody tr:hover {
+            background-color: #f9fafb; /* Sehr helles Grau beim Hover im Light Mode */
+        }
+        body:not(.dark) .ranking-table th,
+        body:not(.dark) .ranking-table td {
+            border-color: #e2e8f0; /* Hellerer Rand für Zellen im Light Mode */
+        }
+
+        /* Explicit Light Mode Table Cell Text Colors to ensure dark text */
+        body:not(.dark) .ranking-table td {
+            color: #374151; /* Default dark text for light mode */
+        }
+        body:not(.dark) .ranking-table td.font-bold {
+            color: #1f2937; /* Even darker for bold text in light mode */
+        }
+
+        /* Explicit Dark Mode Table Cell Text Colors to ensure light text */
+        body.dark .ranking-table td {
+            color: #cbd5e0; /* Default light text for dark mode (text-gray-400 equivalent) */
+        }
+        body.dark .ranking-table td.font-bold {
+            color: #e2e8f0; /* Lighter for bold text in dark mode (text-gray-200 equivalent) */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl relative pt-20">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">Rangliste der Stände</h2>
+
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="message-box" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        <div id="rankingTableContainer" class="overflow-x-auto">
+            {# Ranking table will be dynamically loaded here by JavaScript #}
+            <p id="noRankingsMessage" class="text-center text-gray-600 dark:text-gray-400 hidden">Es liegen noch keine Bewertungen vor, um eine Rangliste zu erstellen.</p>
+        </div>
+
+        <div class="mt-8 text-center no-print">
+            <a href="{{ url_for('ranking.print_ranking_page') }}" target="_blank"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                           transition duration-200 ease-in-out transform hover:scale-105">
+                Seite drucken / als PDF speichern
+            </a>
+            <a href="{{ url_for('general.home') }}"
+               class="ml-4 text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inlineMessage');
+            const messageText = document.getElementById('inlineMessageText');
+
+            messageText.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else if (type === 'info') {
+                messageBox.classList.add('info');
+            }
+
+            // Hide the message after 'duration' milliseconds
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                // Optional: Clear text after transition for accessibility/cleanliness
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Should match CSS transition duration
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const rankingTableContainer = document.getElementById('rankingTableContainer');
+            const noRankingsMessage = document.getElementById('noRankingsMessage');
+            const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
+
+            // Function to fetch and apply app settings (for background colors and favicon)
+            // It now takes an optional parameter to explicitly set the dark mode state
+            async function applyAppSettings(isDarkModeOverride = null) {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        // Determine the current dark mode state
+                        const isDarkMode = isDarkModeOverride !== null ? isDarkModeOverride : body.classList.contains('dark');
+
+                        // Apply background gradient based on current mode
+                        if (isDarkMode && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                            body.classList.add('dark'); // Ensure dark class is applied
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                            body.classList.remove('dark'); // Ensure dark class is removed
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                            if (isDarkMode) {
+                                body.classList.add('dark');
+                            } else {
+                                body.classList.remove('dark');
+                            }
+                        }
+
+                        // Apply logo to favicon
+                        if (settings.logo_path) {
+                            faviconLink.href = settings.logo_path; // Update favicon
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback
+                        }
+
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            // Function to update the Dark Mode button appearance
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>'; // Moon icon
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>'; // Back arrow icon
+            }
+
+            // Set initial state of Dark Mode button
+            updateButtonAppearance();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    // Re-apply all settings to reflect the new dark mode state
+                    // Pass the dark_mode_enabled status directly from the response
+                    await applyAppSettings(data.dark_mode_enabled); 
+                    updateButtonAppearance(); // Update button appearance
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}'; // Redirect to home page
+            });
+
+            // Function to fetch and render rankings
+            async function fetchAndRenderRankings() {
+                try {
+                    const response = await fetch('/api/ranking_data');
+                    const data = await response.json();
+
+                    if (data.success && data.rankings.length > 0) {
+                        noRankingsMessage.classList.add('hidden'); // Hide "no rankings" message
+                        let tableHtml = `
+                            <table class="min-w-full rounded-lg shadow-md overflow-hidden ranking-table">
+                                <thead class="text-gray-700 dark:text-gray-200">
+                                    <tr>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Rang</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Stand</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Raum</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Gesamtpunkte</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Anzahl Bewerter</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Durchschnittliche Punktzahl</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        `;
+
+                        data.rankings.forEach((ranking, index) => {
+                            // Calculate average score
+                            const averageScore = ranking.num_evaluators > 0 
+                                ? (ranking.total_achieved_score / ranking.num_evaluators).toFixed(2) 
+                                : 'N/A';
+
+                            tableHtml += `
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-150">
+                                    <td class="py-3 px-4 font-bold">${ranking.rank}</td>
+                                    <td class="py-3 px-4">${ranking.stand_name}</td>
+                                    <td class="py-3 px-4">${ranking.room_name || 'N/A'}</td>
+                                    <td class="py-3 px-4">${ranking.total_achieved_score}</td>
+                                    <td class="py-3 px-4">${ranking.num_evaluators}</td>
+                                    <td class="py-3 px-4">${averageScore}</td>
+                                </tr>
+                            `;
+                        });
+
+                        tableHtml += `</tbody></table>`;
+                        rankingTableContainer.innerHTML = tableHtml;
+                    } else {
+                        rankingTableContainer.innerHTML = ''; // Clear any existing table
+                        noRankingsMessage.classList.remove('hidden'); // Show "no rankings" message
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Rangliste:', error);
+                    displayInlineMessage('Ein Fehler ist beim Laden der Rangliste aufgetreten.', 'error');
+                    rankingTableContainer.innerHTML = ''; // Clear table on error
+                    noRankingsMessage.classList.remove('hidden'); // Show "no rankings" message
+                }
+            }
+
+            // Initial fetch and render of rankings
+            fetchAndRenderRankings();
+            // Initial application of app settings. Get the current state from the body class.
+            await applyAppSettings(body.classList.contains('dark')); 
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info'; // Default to 'info' if type is not specified
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                // Clear the URL parameters to prevent the message from reappearing on refresh
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

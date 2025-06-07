@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bewertungsbogen</title>
+    <link href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Stile für die Druckansicht */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background for screen */
+            margin: 0;
+            padding: 20mm; /* A4-Ränder */
+            box-sizing: border-box;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            min-height: 100vh;
+        }
+
+        /* Dark Mode styles for screen view (these will be overridden by @media print) */
+        body.dark {
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+        }
+        .dark .container {
+            background-color: #000000; /* Black background for content */
+            color: #e2e8f0;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .border-gray-300 {
+            border-color: #4a5568;
+        }
+        .dark .bg-gray-100 {
+            background-color: #2d3748;
+        }
+        .dark .text-gray-700 {
+            color: #cbd5e0;
+        }
+        .dark .bg-blue-600 {
+            background-color: #3182ce;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #2b6cb0;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #4299e1;
+        }
+        .dark .loading-spinner {
+            border-top-color: #e2e8f0;
+            border-left-color: #e2e8f0;
+            border-bottom-color: #e2e8f0;
+            border-right-color: transparent;
+        }
+
+
+        /* A4-Format für den Druck */
+        @page {
+            size: A4;
+            margin: 10mm; /* Reduzierte Ränder für mehr Platz */
+        }
+
+        /* Nur für den Druck: Elemente ausblenden, die nicht gedruckt werden sollen */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #ffffff !important; /* Weißer Hintergrund für den Druck erzwingen */
+                color: #333 !important; /* Dunkler Text für den Druck erzwingen */
+                font-size: 9pt; /* Kleinere Basisschriftgröße für den Druck */
+            }
+            .no-print {
+                display: none !important;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 5mm; /* Stark reduziertes Padding im Container */
+                background-color: #ffffff !important; /* Container-Hintergrund weiß erzwingen */
+                color: #333 !important; /* Container-Textfarbe dunkel erzwingen */
+            }
+            .header {
+                margin-bottom: 2mm; /* Stark reduzierter Abstand nach dem Header */
+            }
+            .header img {
+                max-width: 50px; /* Noch kleineres Logo */
+                margin-bottom: 1mm;
+            }
+            .header h1 {
+                font-size: 1rem; /* Noch kleinere Überschrift */
+                color: #333 !important; /* Überschrift dunkel erzwingen */
+            }
+            .header p {
+                font-size: 7pt; /* Noch kleinere Untertitel */
+                color: #666 !important; /* Untertitel dunkelgrau erzwingen */
+            }
+            .section-title {
+                font-size: 1rem; /* Kleinere Sektionsüberschriften */
+                margin-bottom: 0.3rem;
+                padding-bottom: 0.1rem;
+                border-bottom: 1px solid #000; /* Dünnere Linie */
+                color: #333 !important; /* Sektionsüberschrift dunkel erzwingen */
+            }
+            .info-item {
+                margin-bottom: 0.1rem; /* Weniger Abstand zwischen Info-Items */
+                font-size: 8pt; /* Kleinere Schrift für Info-Items */
+                color: #333 !important; /* Info-Items Text dunkel erzwingen */
+            }
+            .criteria-table {
+                margin-top: 0.3rem; /* Weniger Abstand vor der Tabelle */
+            }
+            .criteria-table th,
+            .criteria-table td {
+                padding: 0.2rem 0.4rem; /* Noch kompaktere Zellenpolsterung */
+                font-size: 8pt; /* Kleinere Schrift in der Tabelle */
+                border: 1px solid #ccc; /* Hellere Linien */
+                color: #333 !important; /* Tabellentext dunkel erzwingen */
+            }
+            .criteria-table th {
+                background-color: #f0f0f0 !important; /* Hellerer Hintergrund für Header erzwingen */
+            }
+            /* print-underline-total for the total score line */
+            .print-underline-total {
+                display: inline-block;
+                width: 100px; /* Adjust width as needed for total score */
+                border-bottom: 1px solid #000 !important; /* Dünnere solid black line für Total erzwingen */
+                margin-left: 5px;
+                vertical-align: baseline; /* Linie an der Text-Baseline ausrichten */
+            }
+            .flex.justify-end.items-baseline {
+                margin-top: 0.5rem; /* Weniger Abstand vor der Gesamtpunktzahl */
+            }
+            .flex.justify-end.items-baseline p {
+                font-size: 0.9rem; /* Kleinere Schrift für Gesamtpunktzahl */
+                color: #333 !important; /* Gesamtpunktzahl Text dunkel erzwingen */
+            }
+            /* Ensure table rows do not break across pages */
+            .criteria-table tr {
+                page-break-inside: avoid;
+            }
+            /* Ensure all text colors are dark and backgrounds are light */
+            .text-gray-800, .text-gray-600, .text-gray-700 {
+                color: #333 !important;
+            }
+            /* Explicitly override dark mode text/backgrounds for print */
+            .dark .text-gray-800, .dark .text-gray-600, .dark .text-gray-700 {
+                color: #333 !important;
+            }
+            .dark .bg-gray-100, .dark .bg-amber-50, .dark .bg-white {
+                background-color: #ffffff !important;
+            }
+
+            /* Custom styling for the stand input line for print */
+            .stand-input-line {
+                display: inline-block;
+                width: 200px; /* Breite der Linie anpassen */
+                border-bottom: 1px solid #000; /* Schwarze Linie */
+                margin-left: 5px;
+                vertical-align: baseline; /* Linie an der Text-Baseline ausrichten */
+            }
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 210mm; /* A4 width */
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header img {
+            max-width: 150px;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .info-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .criteria-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .criteria-table th,
+        .criteria-table td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .criteria-table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+
+        /* print-underline-total for the total score line (screen view) - now solid and aligned */
+        .print-underline-total {
+            display: inline-block;
+            width: 120px;
+            border-bottom: 2px solid #999; /* Solid line for screen */
+            margin-left: 10px;
+            vertical-align: baseline; /* Linie an der Text-Baseline ausrichten */
+        }
+
+        /* Custom styling for the stand input line (screen view) */
+        .stand-input-line {
+            display: inline-block;
+            width: 200px; /* Breite der Linie anpassen */
+            border-bottom: 2px solid #999; /* Solid line for screen */
+            margin-left: 5px;
+            vertical-align: baseline; /* Linie an der Text-Baseline ausrichten */
+        }
+
+        /* Loading Spinner (not needed anymore but keeping styles for consistency) */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="{{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="container">
+        <div class="header">
+            <img src="{{ logo_url }}" alt="Company Logo" class="mx-auto mb-4">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Leerer Bewertungsbogen</h1>
+            <p class="text-gray-600">Druckansicht</p>
+        </div>
+
+        {# Removed loadingIndicator and errorMessageDiv as data is directly rendered #}
+        <div id="content"> {# No longer hidden by default #}
+            <div class="mb-6">
+                <h2 class="section-title text-gray-800">Stand Informationen</h2>
+                <div class="info-item text-gray-700">
+                    <strong>Stand:</strong> <span class="stand-input-line"></span>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h2 class="section-title text-gray-800">Bewertung nach Kriterien</h2>
+                <table class="criteria-table">
+                    <thead>
+                        <tr>
+                            <th class="text-gray-700">Nr.</th>
+                            <th class="text-gray-700">Kriterium</th>
+                            <th class="text-gray-700">Beschreibung</th>
+                            <th class="text-gray-700">Max. Punkte</th>
+                            <th class="text-gray-700">Erreichte Punkte</th>
+                        </tr>
+                    </thead>
+                    <tbody id="criteriaTableBody">
+                        {% for criterion in criteria %}
+                        <tr>
+                            <td class="py-2 px-4 text-gray-700">{{ loop.index }}.</td>
+                            <td class="py-2 px-4 text-gray-700">{{ criterion.name }}</td>
+                            <td class="py-2 px-4 text-gray-700">{{ criterion.description | safe or 'N/A' }}</td>
+                            <td class="py-2 px-4 text-gray-700">{{ criterion.max_score }}</td>
+                            <td class="py-2 px-4 text-gray-700"></td> {# Removed score-box div #}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-8 flex justify-end items-baseline">
+                <p class="text-xl font-bold text-gray-800">Gesamtpunktzahl:
+                    <span class="print-underline-total"></span> / {{ total_max_possible_score }}
+                </p>
+            </div>
+
+            <div class="mt-8 text-center no-print">
+                <button onclick="window.print()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                               transition duration-200 ease-in-out transform hover:scale-105">
+                    Seite drucken / als PDF speichern
+                </button>
+                <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}"
+                   class="ml-4 text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                    Zurück zur Übersicht
+                </a>
+            </div>
+        </div>
+    </div>
+    {# Removed all JavaScript as data is passed via Jinja2 #}
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator-Einrichtung</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark {
+            color: #e2e8f0;
+        }
+        .dark .bg-white {
+            background-color: #000000;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        .bg-amber-50 {
+            background-color: #FFFBEB;
+        }
+        .dark .bg-amber-50 {
+            background-color: #1c1c1c;
+            color: #e2e8f0;
+        }
+        .text-gray-700 {
+            color: #4a5568;
+        }
+        .dark .text-gray-700 {
+            color: #ffffff;
+        }
+        .border {
+            border-color: #e2e8f0;
+        }
+        .dark .border {
+            border-color: #555555;
+        }
+        input[type="text"],
+        input[type="password"] {
+            background-color: #ffffff;
+            color: #374151;
+            border-color: #d1d5db;
+        }
+        .dark input[type="text"],
+        .dark input[type="password"] {
+            background-color: #1c1c1c;
+            color: #ffffff;
+            border-color: #555555;
+        }
+        .dark input[type="text"]::placeholder,
+        .dark input[type="password"]::placeholder {
+            color: #aaaaaa;
+        }
+        .focus\:ring-orange-400:focus {
+            --tw-ring-color: #fbd38d;
+        }
+        .bg-orange-500 {
+            background-color: #f97316;
+        }
+        .hover\:bg-orange-600:hover {
+            background-color: #ea580c;
+        }
+        .dark .bg-orange-500 {
+            background-color: #c05621;
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #9c4221;
+        }
+        /* Modal Styling (Copied from index.html) */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-content.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .modal-content.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .modal-close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-close-button:hover,
+        .modal-close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Administrator-Einrichtung</h2>
+
+        {# Removed Jinja error/success message block, now handled by JS modal #}
+
+        <p class="text-gray-600 mb-6 text-center">
+            Ihr Administrator-Account verwendet noch das temporäre Standardpasswort.
+            Bitte legen Sie ein neues sicheres Passwort fest, um fortzufahren.
+        </p>
+
+        <form id="adminSetupForm" class="space-y-4"> {# Added ID to form and removed method="POST" #}
+            <div>
+                <label for="new_password" class="block text-gray-700 text-sm font-semibold mb-2">Neues Passwort:</label>
+                <input type="password" id="new_password" name="new_password" required
+                       class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out"
+                       placeholder="Neues Passwort">
+            </div>
+            <div>
+                <label for="confirm_password" class="block text-gray-700 text-sm font-semibold mb-2">Passwort bestätigen:</label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                       class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out"
+                       placeholder="Passwort bestätigen">
+            </div>
+            <div>
+                <label for="display_name" class="block text-gray-700 text-sm font-semibold mb-2">Anzeigename (optional):</label>
+                <input type="text" id="display_name" name="display_name"
+                       class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out"
+                       placeholder="Administrator">
+            </div>
+            <button type="submit"
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Passwort festlegen und fortfahren
+            </button>
+        </form>
+    </div>
+
+    {# Modal Structure (Copied from index.html) #}
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-button" onclick="closeModal()">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        // Function to display modal messages (Copied from index.html)
+        function displayModalMessage(message, type = 'info') {
+            const modal = document.getElementById('messageModal');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalContent = modal.querySelector('.modal-content');
+
+            modalMessage.textContent = message;
+            modalContent.className = 'modal-content'; // Reset classes
+            if (type === 'success') {
+                modalContent.classList.add('success');
+            } else if (type === 'error') {
+                modalContent.classList.add('error');
+            }
+            modal.style.display = 'flex'; // Show modal
+        }
+
+        // Function to close modal (Copied from index.html)
+        function closeModal() {
+            document.getElementById('messageModal').style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const adminSetupForm = document.getElementById('adminSetupForm');
+            const body = document.body;
+            const faviconLink = document.getElementById('faviconLink'); // Get the favicon link element
+
+            // Function to fetch and apply app settings (background and favicon)
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark');
+
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Logo für Favicon aktualisieren
+                        if (settings.logo_url) {
+                            faviconLink.href = settings.logo_url;
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            // Initial application of app settings
+            await applyAppSettings();
+
+            // Handle form submission via fetch
+            adminSetupForm.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Prevent default form submission
+
+                const newPassword = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                const displayName = document.getElementById('display_name').value;
+
+                try {
+                    const response = await fetch('{{ url_for("auth.admin_setup") }}', { // Corrected endpoint
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json' // Server expects JSON for this route's POST
+                        },
+                        body: JSON.stringify({
+                            new_password: newPassword,
+                            confirm_password: confirmPassword,
+                            display_name: displayName
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) { // Check if response status is 2xx
+                        if (data.success) {
+                            displayModalMessage(data.message, 'success');
+                            setTimeout(() => {
+                                window.location.href = '{{ url_for("general.home") }}'; // Corrected endpoint
+                            }, 1500); // Redirect after 1.5 seconds
+                        } else {
+                            displayModalMessage(data.message, 'error');
+                        }
+                    } else { // Handle non-2xx responses (e.g., 400 Bad Request, 401 Unauthorized)
+                        displayModalMessage(data.message || 'Ein unbekannter Fehler ist aufgetreten.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Admin setup error:', error);
+                    displayModalMessage('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', 'error');
+                }
+            });
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

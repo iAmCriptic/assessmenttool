@@ -1,0 +1,104 @@
+import sqlite3
+from flask import Blueprint, render_template, session, jsonify, redirect, url_for, request, current_app, send_from_directory
+from decorators import role_required
+from db import get_db
+import os
+
+general_bp = Blueprint('general', __name__)
+
+@general_bp.route('/home')
+@role_required(['Administrator', 'Bewerter', 'Betrachter', 'Inspektor', 'Verwarner'])
+def home():
+    """Zeigt die Startseite an."""
+    return render_template('home.html', dark_mode_enabled=session.get('dark_mode_enabled'))
+
+@general_bp.route('/api/session_data')
+@role_required(['Administrator', 'Bewerter', 'Betrachter', 'Inspektor', 'Verwarner'])
+def api_session_data():
+    """Gibt die aktuellen Sitzungsdaten des Benutzers als JSON zurück."""
+    return jsonify({
+        'success': True,
+        'logged_in': session.get('logged_in', False),
+        'username': session.get('username'),
+        'display_name': session.get('display_name'),
+        'user_id': session.get('user_id'),
+        'is_admin': session.get('is_admin', False),
+        'user_roles': session.get('user_roles', []),
+        'dark_mode_enabled': session.get('dark_mode_enabled', False)
+    })
+
+@general_bp.route('/toggle_dark_mode', methods=['POST'])
+def toggle_dark_mode():
+    """Schaltet den Dark Mode-Status um und speichert ihn in der Session."""
+    session['dark_mode_enabled'] = not session.get('dark_mode_enabled', False)
+    return jsonify(dark_mode_enabled=session['dark_mode_enabled'])
+
+@general_bp.route('/manage_list', methods=['GET'])
+@role_required(['Administrator'])
+def manage_list_page():
+    """Verwaltet das Zurücksetzen von Rangliste und Rauminspektionen."""
+    # Korrektur: Verwende render_template, da manage_list.html Jinja2-Variablen enthalten wird.
+    dark_mode_enabled = session.get('dark_mode_enabled', False)
+    return render_template('manage_list.html', dark_mode_enabled=dark_mode_enabled)
+
+@general_bp.route('/api/reset_data', methods=['POST'])
+@role_required(['Administrator'])
+def api_reset_data():
+    """Setzt Datenlisten basierend auf der Aktion zurück."""
+    db = get_db()
+    cursor = db.cursor()
+    data = request.get_json()
+    action = data.get('action')
+
+    try:
+        if action == 'reset_ranking':
+            cursor.execute("DELETE FROM evaluation_scores")
+            cursor.execute("DELETE FROM evaluations")
+            message = "Rangliste erfolgreich zurückgesetzt! Alle Bewertungen wurden gelöscht."
+        elif action == 'reset_room_inspections':
+            cursor.execute("DELETE FROM room_inspections")
+            message = "Rauminspektionen erfolgreich zurückgesetzt! Alle Inspektionsdaten wurden gelöscht."
+        elif action == 'reset_warnings':
+            cursor.execute("DELETE FROM warnings")
+            message = "Alle Verwarnungen erfolgreich zurückgesetzt!"
+        else:
+            return jsonify({'success': False, 'message': "Ungültige Aktion angefordert."}), 400
+        db.commit()
+        return jsonify({'success': True, 'message': message})
+    except sqlite3.Error as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': f"Ein Fehler ist aufgetreten: {e}"}), 500
+
+@general_bp.route('/static/<path:filename>')
+def static_files(filename):
+    """Stellt statische Dateien bereit."""
+    # current_app.send_static_file() findet Dateien im 'static'-Ordner der App
+    return current_app.send_static_file(filename)
+
+# NEW ROUTE for the Service Worker (moved from app.py)
+@general_bp.route('/service-worker.js')
+def serve_service_worker():
+    """Stellt die service-worker.js-Datei aus dem Stammverzeichnis bereit."""
+    # send_from_directory wird verwendet, um Dateien außerhalb des 'static'-Ordners zu senden
+    return send_from_directory(current_app.root_path, 'service-worker.js', mimetype='application/javascript')
+
+# NEW ROUTE for the example Excel file for stands (moved from app.py)
+@general_bp.route('/static/beispiel_staende.xlsx')
+def download_beispiel_staende_excel():
+    """Stellt die beispiel_staende.xlsx-Datei aus dem statischen Ordner zum Download bereit."""
+    # Korrektur: Verwende send_from_directory mit as_attachment=True
+    return send_from_directory(current_app.static_folder, 'beispiel_staende.xlsx', as_attachment=True)
+
+# NEW ROUTE for the example Excel file for users (moved from app.py)
+@general_bp.route('/static/beispiel_benutzer.xlsx')
+def download_beispiel_benutzer_excel():
+    """Stellt die beispiel_benutzer.xlsx-Datei aus dem statischen Ordner zum Download bereit."""
+    # Korrektur: Verwende send_from_directory mit as_attachment=True
+    return send_from_directory(current_app.static_folder, 'beispiel_benutzer.xlsx', as_attachment=True)
+
+# NEW ROUTE for the example Excel file for criteria (moved from app.py)
+@general_bp.route('/static/beispiel_kriterien.xlsx')
+def download_beispiel_kriterien_excel():
+    """Stellt die beispiel_kriterien.xlsx-Datei aus dem statischen Ordner zum Download bereit."""
+    # Korrektur: Verwende send_from_directory mit as_attachment=True
+    return send_from_directory(current_app.static_folder, 'beispiel_kriterien.xlsx', as_attachment=True)

@@ -1,0 +1,11 @@
+- Benutzer mit der Rolle Verwarner, können nun Verwarnungen ungültig machen
+- Upload von Ständen per XLSX, XLS sind Möglich
+- Upload von Kriterien per XLSX, XLS sind Möglich
+- Redesign der Login Page
+- Redesign der Startseite
+- Redisgn Back & Dark mode button
+- Anpassen der Rangliste
+
+Known Issues:
+- Rangliste funktioniert nicht richgtig.
+

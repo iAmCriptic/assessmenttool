@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehler {{ error_code }}</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: #1f2937; /* Standard-Textfarbe für Light Mode */
+        }
+        body.dark {
+            color: #e2e8f0;
+        }
+        .main-content-area {
+            background-color: #ffffff;
+            color: #1f2937;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .dark .main-content-area {
+            background-color: #000000;
+            color: #e2e8f0;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568;
+        }
+        .dark .bg-gray-100 {
+            background-color: #1c1c1c;
+        }
+        .dark .bg-gray-200 {
+            background-color: #2d3748;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4;
+        }
+        /* Spezifische Stile für Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div id="mainContentArea" class="main-content-area p-8 rounded-lg shadow-lg w-full max-w-md text-center relative pt-20 border border-gray-200">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0 p-4">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0 p-4">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h1 class="text-6xl font-bold text-red-600 mb-4">{{ error_code }}</h1>
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Uups! Etwas ist schiefgelaufen.</h2>
+        <p class="text-gray-600 mb-8">{{ error_message }}</p>
+        
+        <a href="{{ url_for('general.home') }}"
+           class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                  transition duration-200 ease-in-out transform hover:scale-105">
+            <span class="mr-2"><i class="fi fi-rr-home"></i></span>
+            Zur Startseite
+        </a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const faviconLink = document.getElementById('faviconLink');
+            const mainTitle = document.querySelector('h2'); // Der Titel "Uups! Etwas ist schiefgelaufen."
+
+
+            // Funktion zum Aktualisieren des Aussehens des Dark Mode Buttons
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>';
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>';
+            }
+
+            // Initialen Zustand des Dark Mode Buttons setzen
+            updateButtonAppearance();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                        mainTitle.classList.remove('text-gray-800'); // Entferne Light Mode spezifische Farbe
+                        mainTitle.classList.add('dark:text-e2e8f0'); // Füge Dark Mode Farbe hinzu
+                    } else {
+                        body.classList.remove('dark');
+                        mainTitle.classList.remove('dark:text-e2e8f0');
+                        mainTitle.classList.add('text-gray-800');
+                    }
+                    updateButtonAppearance();
+                    await applyAppSettings(); // Einstellungen erneut anwenden, um Hintergrund zu aktualisieren
+                } catch (error) {
+                    console.error('Fehler beim Umschalten des Dark Mode:', error);
+                    // Hier keine Inline-Nachricht, da es sich um eine Fehlerseite handelt
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.history.back(); // Zurück zur vorherigen Seite
+            });
+
+
+            // Funktion zum Abrufen und Anwenden der App-Einstellungen (Hintergrund und Favicon)
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark');
+
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback zu Standard, falls Einstellungen fehlen
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Logo für Favicon aktualisieren
+                        if (settings.logo_url) {
+                            faviconLink.href = settings.logo_url;
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            // Initiales Anwenden der App-Einstellungen
+            await applyAppSettings();
+
+            // Service Worker Registrierung
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

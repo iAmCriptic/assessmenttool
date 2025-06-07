@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Bewertungen</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            /* Entfernt das Padding vom Body, um volle Breite für den Hauptcontainer zu ermöglichen */
+            /* p-4 wurde entfernt */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: #1f2937; /* Explizite Standard-Textfarbe für Light Mode (entspricht text-gray-800) */
+        }
+        body.dark {
+            /* Hintergrund wird dynamisch über JavaScript gesetzt */
+            color: #e2e8f0; /* Hellerer Text für Dark Mode */
+        }
+
+        /* Hauptcontainer und Tabellen-Hintergrund/-Textfarben für Light Mode */
+        .main-content-container,
+        #evaluationsTableContainer table,
+        .evaluation-card { /* Auch für die Karten */
+            background-color: #ffffff; /* Weißer Hintergrund für Light Mode */
+            color: #1f2937; /* Dunkler Text für Light Mode */
+        }
+        #evaluationsTableContainer thead {
+            background-color: #e5e7eb; /* Heller Grau für Light Mode Tabellenkopf */
+            color: #374151; /* Dunkler Text für Light Mode Tabellenkopf */
+        }
+        #evaluationsTableContainer tbody tr {
+            background-color: #ffffff; /* Weiß für Light Mode Tabellenzeilen */
+            color: #374151; /* Dunkler Text für Light Mode Tabellenzeilen */
+        }
+        body:not(.dark) #evaluationsTableContainer tbody tr:hover {
+            background-color: #f9fafb; /* Sehr helles Grau beim Hover im Light Mode */
+        }
+        body:not(.dark) #evaluationsTableContainer td {
+            color: #374151; /* Standardtextfarbe für Tabellenzellen im Light Mode */
+        }
+        body:not(.dark) #evaluationsTableContainer td.text-gray-900 {
+            color: #1f2937; /* Spezifischer dunkler Text für bestimmte Zellen */
+        }
+        body:not(.dark) #evaluationsTableContainer td.text-gray-700 {
+            color: #374151; /* Spezifischer dunkler Text für bestimmte Zellen */
+        }
+
+
+        /* Dark Mode Überschreibungen */
+        .dark .main-content-container,
+        .dark #evaluationsTableContainer table,
+        .dark .evaluation-card { /* Auch für die Karten */
+            background-color: #000000; /* Schwarzer Hintergrund für Dark Mode */
+            color: #e2e8f0; /* Hellerer Text für Dark Mode */
+        }
+        .dark #evaluationsTableContainer thead {
+            background-color: #1c1c1c; /* Dunklerer Grau für Dark Mode Tabellenkopf */
+            color: #e2e8f0; /* Hellerer Text für Dark Mode Tabellenkopf */
+        }
+        .dark #evaluationsTableContainer tbody tr {
+            background-color: #000000; /* Schwarz für Dark Mode Tabellenzeilen */
+            color: #e2e8f0; /* Hellerer Text für Dark Mode Tabellenzeilen */
+        }
+        body.dark #evaluationsTableContainer tbody tr:hover {
+            background-color: #1a202c; /* Dunklerer Grau beim Hover im Dark Mode */
+        }
+        body.dark #evaluationsTableContainer td {
+            color: #e2e8f0; /* Allgemeine Zelltextfarbe im Dark Mode */
+        }
+        body.dark #evaluationsTableContainer td.text-gray-900 {
+            color: #e2e8f0;
+        }
+        body.dark #evaluationsTableContainer td.text-gray-700 {
+            color: #e2e8f0;
+        }
+
+
+        /* Bestehende Dark Mode Stile für allgemeine Elemente */
+        .dark .bg-white { /* Diese Regel ist jetzt allgemeiner, aber spezifische Regeln oben haben Vorrang */
+            background-color: #000000;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        .dark .bg-amber-50 {
+            background-color: #1c1c1c;
+            color: #e2e8f0;
+        }
+        .dark .text-gray-700 {
+            color: #ffffff;
+        }
+        .dark .border {
+            border-color: #555555;
+        }
+        .dark .focus\:ring-orange-400:focus {
+            --tw-ring-color: #fbd38d;
+        }
+        .dark .bg-orange-500 {
+            background-color: #c05621;
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #9c4221;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #4299e1;
+        }
+        .dark .bg-gray-200 { /* Diese Regel ist jetzt allgemeiner, aber spezifische Regeln oben haben Vorrang */
+            background-color: #1c1c1c;
+        }
+        /* .dark .text-gray-700 { Diese Regel ist jetzt aufgrund expliziter Regeln oben redundant } */
+        .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #4a5568;
+        }
+        .dark .hover\:bg-gray-50:hover { /* Diese Regel ist jetzt aufgrund expliziter Regeln oben redundant */
+            background-color: #1a202c;
+        }
+        .dark input[type="text"],
+        .dark input[type="number"],
+        .dark textarea,
+        .dark select {
+            background-color: #1c1c1c;
+            color: #ffffff;
+            border-color: #555555;
+        }
+        .dark input[type="text"]::placeholder,
+        .dark input[type="number"]::placeholder,
+        .dark textarea::placeholder {
+            color: #aaaaaa;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Inline Message Styling */
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            border-width: 1px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .message-box.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message-box.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .message-box.info {
+            background-color: #cce5ff;
+            color: #004085;
+            border-color: #b8daff;
+        }
+
+        .dark .message-box.success {
+            background-color: #0f5132;
+            color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .dark .message-box.error {
+            background-color: #721c24;
+            color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .dark .message-box.info {
+            background-color: #004085;
+            color: #cce5ff;
+            border-color: #1a5a9a;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen {{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="main-content-container p-8 rounded-lg shadow-lg w-full sm:max-w-4xl relative pt-20">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Meine Bewertungen</h2>
+
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="message-box" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        <div id="loadingIndicator" class="loading-spinner"></div>
+        <p id="noEvaluationsMessage" class="text-center text-gray-600 hidden">Es sind noch keine Bewertungen vorhanden.</p>
+
+        {# Table View #}
+        <div id="evaluationsTableContainer" class="overflow-x-auto">
+            <table class="min-w-full rounded-lg shadow-md overflow-hidden">
+                <thead class="bg-gray-200 text-gray-700">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Stand</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Gesamtpunktzahl</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Datum der Bewertung</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="evaluationsTableBody" class="divide-y divide-gray-200">
+                    {# Evaluations will be dynamically loaded here by JavaScript #}
+                </tbody>
+            </table>
+        </div>
+
+        {# Card View #}
+        <div id="evaluationsCardContainer" class="grid grid-cols-1 gap-4">
+            {# Evaluation cards will be dynamically loaded here by JavaScript #}
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('general.home') }}"
+               class="text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    {# Breakpoint Indicator for Debugging #}
+    <div class="fixed bottom-0 right-0 p-2 bg-black text-white text-xs z-50">
+        <span class="block sm:hidden">xs</span>
+        <span class="hidden sm:block md:hidden">sm</span>
+        <span class="hidden md:block lg:hidden">md</span>
+        <span class="hidden xl:block">xl</span>
+    </div>
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inlineMessage');
+            const messageText = document.getElementById('inlineMessageText');
+
+            if (!messageBox || !messageText) {
+                console.error('Message box elements not found. Cannot display message:', message);
+                return;
+            }
+
+            messageText.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else if (type === 'info') {
+                messageBox.classList.add('info');
+            }
+
+            // Hide the message after 'duration' milliseconds
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Should match CSS transition duration
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const evaluationsTableContainer = document.getElementById('evaluationsTableContainer');
+            const evaluationsTableBody = document.getElementById('evaluationsTableBody');
+            const evaluationsCardContainer = document.getElementById('evaluationsCardContainer');
+            const noEvaluationsMessage = document.getElementById('noEvaluationsMessage');
+            const faviconLink = document.getElementById('faviconLink');
+
+            // Function to check screen width and toggle display mode
+            function checkDisplayMode() {
+                const screenWidth = window.innerWidth;
+                const mdBreakpoint = 768; // Tailwind's 'md' breakpoint
+
+                if (screenWidth < mdBreakpoint) {
+                    // Mobile view: show cards, hide table
+                    evaluationsTableContainer.style.display = 'none';
+                    evaluationsCardContainer.style.display = 'grid'; // Use 'grid' for cards
+                } else {
+                    // Desktop view: show table, hide cards
+                    evaluationsTableContainer.style.display = 'block';
+                    evaluationsCardContainer.style.display = 'none';
+                }
+            }
+
+            // Function to fetch and apply app settings (for background colors and favicon)
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark'); // Get current dark mode state from body class
+
+                        // Apply background gradient based on current mode
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Apply logo to favicon
+                        if (settings.logo_path) {
+                            faviconLink.href = settings.logo_path; // Update favicon
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback
+                        }
+
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    await applyAppSettings(); // Re-apply settings to update background and favicon
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            // Function to format datetime
+            function formatDatetime(isoString) {
+                if (!isoString) return 'N/A';
+                try {
+                    const dt = new Date(isoString);
+                    return dt.toLocaleDateString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }).replace(',', ' -'); // Format 'dd.mm.yyyy - HH:MM'
+                } catch (e) {
+                    console.error("Error formatting date:", e);
+                    return isoString; // Fallback to original string
+                }
+            }
+
+            // Function to fetch and render evaluations
+            async function fetchAndRenderEvaluations() {
+                loadingIndicator.classList.remove('hidden');
+                evaluationsTableBody.innerHTML = ''; // Clear previous table data
+                evaluationsCardContainer.innerHTML = ''; // Clear previous card data
+                noEvaluationsMessage.classList.add('hidden'); // Hide no evaluations message initially
+
+                try {
+                    const response = await fetch('/api/my_evaluations');
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        let errorMessage = 'Ein unbekannter Fehler ist beim Laden der Bewertungen aufgetreten.';
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.message || errorMessage;
+                        } catch (parseError) {
+                            errorMessage = `Serverfehler (${response.status} ${response.statusText}): Die Antwort war kein gültiges JSON. Möglicherweise ist Ihre Sitzung abgelaufen.`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    const data = await response.json();
+
+                    if (data.success && data.evaluations.length > 0) {
+                        data.evaluations.forEach(evaluation => {
+                            // --- Table Row Generation ---
+                            const tableRow = document.createElement('tr');
+                            tableRow.className = 'hover:bg-gray-50 transition-colors duration-150';
+                            tableRow.innerHTML = `
+                                <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900">${evaluation.stand_name}</td>
+                                <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">${evaluation.total_achieved_score}</td>
+                                <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">${formatDatetime(evaluation.timestamp)}</td>
+                                <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">
+                                    <button data-evaluation-id="${evaluation.evaluation_id}"
+                                            class="print-evaluation-btn inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-xs
+                                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                        <span class="mr-1"><i class="fi fi-rr-print"></i></span>
+                                        Drucken
+                                    </button>
+                                </td>
+                            `;
+                            evaluationsTableBody.appendChild(tableRow);
+
+                            // --- Card Generation ---
+                            const cardDiv = document.createElement('div');
+                            cardDiv.className = 'evaluation-card p-4 rounded-lg shadow-md space-y-2';
+                            cardDiv.innerHTML = `
+                                <div class="font-bold text-lg text-gray-800">${evaluation.stand_name}</div>
+                                <div class="text-gray-700">Gesamtpunktzahl: <span class="font-semibold">${evaluation.total_achieved_score}</span></div>
+                                <div class="text-gray-700">Bewertet am: <span class="font-semibold">${formatDatetime(evaluation.timestamp)}</span></div>
+                                <button data-evaluation-id="${evaluation.evaluation_id}"
+                                        class="print-evaluation-btn w-full mt-2 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm
+                                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                    <span class="mr-1"><i class="fi fi-rr-print"></i></span>
+                                    Drucken
+                                </button>
+                            `;
+                            evaluationsCardContainer.appendChild(cardDiv);
+                        });
+                    } else {
+                        noEvaluationsMessage.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Bewertungen:', error);
+                    displayInlineMessage(`Ein unerwarteter Fehler ist beim Laden der Bewertungen aufgetreten: ${error.message}`, 'error');
+                    noEvaluationsMessage.classList.remove('hidden'); // Show message even on error
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    checkDisplayMode(); // Call after content is loaded
+                }
+                attachPrintButtonListeners(); // Attach listeners after rendering all elements
+            }
+
+            function attachPrintButtonListeners() {
+                document.querySelectorAll('.print-evaluation-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const evaluationId = event.currentTarget.dataset.evaluationId;
+                        if (evaluationId) {
+                            // KORREKTUR: Verwende url_for für die print_evaluation Seite
+                            window.open(`{{ url_for('evaluations.print_evaluation', evaluation_id=0) }}`.replace('/0', `/${evaluationId}`), '_blank');
+                        } else {
+                            displayInlineMessage('Fehler: Keine Bewertungs-ID gefunden.', 'error');
+                        }
+                    });
+                });
+            }
+
+            // Initial calls
+            fetchAndRenderEvaluations();
+            await applyAppSettings();
+            checkDisplayMode(); // Initial call to set correct display mode
+
+            // Listen for window resize events
+            window.addEventListener('resize', checkDisplayMode);
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

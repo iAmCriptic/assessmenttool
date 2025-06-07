@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator-Einstellungen</title>
+    <link id="faviconLink" href="{{ url_for('static', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: #1f2937; /* Standardtextfarbe für Light Mode (schwarz) */
+        }
+        /* Entfernt die festen Dark Mode Hintergrundfarben aus dem CSS,
+           da diese nun dynamisch über JavaScript gesetzt werden. */
+        /* body.dark {
+            background: linear-gradient(to bottom right, #8B0000, #00008B) !important;
+            color: #e2e8f0;
+        } */
+        .dark .bg-white {
+            background-color: #000000;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #cbd5e0;
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568;
+        }
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #2d3748;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4;
+        }
+        .dark .bg-blue-600 {
+            background-color: #4299e1;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #63b3ed;
+        }
+        .dark .bg-red-600 {
+            background-color: #e53e3e;
+        }
+        .dark .hover\:bg-red-700:hover {
+            background-color: #fc8181;
+        }
+        .dark .bg-green-500 {
+            background-color: #48bb78;
+        }
+        .dark .bg-red-500 {
+            background-color: #ef4444;
+        }
+        .dark .bg-yellow-500 {
+            background-color: #f6e05e;
+        }
+        /* Inline Message Styles */
+        .inline-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: fixed; /* Fixpositionierung */
+            top: 1rem; /* Abstand vom oberen Rand */
+            left: 50%; /* Zentrierung horizontal */
+            transform: translateX(-50%); /* Exakte Zentrierung */
+            z-index: 1000; /* Über anderen Elementen */
+            min-width: 300px; /* Mindestbreite */
+            text-align: center;
+        }
+        .inline-message.show {
+            opacity: 1;
+        }
+        .inline-message.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .inline-message.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .inline-message.info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .dark .inline-message.success {
+            background-color: #2f855a;
+            border-color: #38a169;
+            color: #e6fffa;
+        }
+        .dark .inline-message.error {
+            background-color: #c53030;
+            border-color: #e53e3e;
+            color: #fed7d7;
+        }
+        .dark .inline-message.info {
+            background-color: #2b6cb0;
+            border-color: #4299e1;
+            color: #ebf8ff;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Light Mode Stile für Eingabefelder und Labels */
+        input[type="text"],
+        input[type="color"],
+        input[type="file"],
+        select,
+        textarea {
+            background-color: #ffffff; /* Weißer Hintergrund für Light Mode Felder */
+            color: #1f2937; /* Schwarzer Text für Light Mode Felder */
+            border-color: #d1d5db; /* Hellerer Rand */
+        }
+
+        /* Dark Mode Stile für Eingabefelder und Labels */
+        .dark input[type="text"],
+        .dark input[type="color"],
+        .dark input[type="file"],
+        .dark select,
+        .dark textarea {
+            background-color: #1c1c1c; /* Dunkler Hintergrund für Dark Mode Felder */
+            color: #ffffff; /* Weißer Text für Dark Mode Felder */
+            border-color: #555555; /* Dunklerer Rand */
+        }
+
+        /* Platzhaltertext für Light Mode */
+        input[type="text"]::placeholder,
+        input[type="color"]::placeholder,
+        input[type="file"]::placeholder,
+        select::placeholder,
+        textarea::placeholder {
+            color: #6b7280; /* Dunklerer Platzhaltertext im Light Mode */
+        }
+
+        /* Platzhaltertext für Dark Mode */
+        .dark input[type="text"]::placeholder,
+        .dark input[type="color"]::placeholder,
+        .dark input[type="file"]::placeholder,
+        .dark select::placeholder,
+        .dark textarea::placeholder {
+            color: #aaaaaa; /* Hellerer Platzhaltertext im Dark Mode */
+        }
+
+        /* Labels im Light Mode */
+        label {
+            color: #1f2937; /* Schwarzer Text für Labels im Light Mode */
+        }
+        /* Labels im Dark Mode */
+        .dark label {
+            color: #e2e8f0; /* Hellerer Text für Labels im Dark Mode */
+        }
+    </style>
+</head>
+<body class="{{ 'dark' if dark_mode_enabled else '' }}">
+    <div id="inline-message-container" class="inline-message">
+        <p></p>
+    </div>
+
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl text-gray-800 border border-gray-200 relative pt-20">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h1 class="text-3xl font-bold text-center mb-6">Administrator-Einstellungen</h1>
+
+        <form id="adminSettingsForm" class="space-y-6">
+            <div>
+                <label for="indexTitleText" class="block text-sm font-medium text-gray-700">Titeltext auf der Login-Seite</label>
+                <input type="text" id="indexTitleText" name="index_title_text"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="indexTitleColor" class="block text-sm font-medium text-gray-700">Farbe des Titeltextes (Login-Seite)</label>
+                <input type="color" id="indexTitleColor" name="index_title_color"
+                       class="mt-1 block w-full h-10 border border-gray-300 rounded-md shadow-sm
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800">Hintergrund-Verlauf (Light Mode)</h2>
+            <div>
+                <label for="bgGradientColor1" class="block text-sm font-medium text-gray-700">Hintergrundfarbe 1 (Verlauf)</label>
+                <input type="color" id="bgGradientColor1" name="bg_gradient_color1"
+                       class="mt-1 block w-full h-10 border border-gray-300 rounded-md shadow-sm
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="bgGradientColor2" class="block text-sm font-medium text-gray-700">Hintergrundfarbe 2 (Verlauf)</label>
+                <input type="color" id="bgGradientColor2" name="bg_gradient_color2"
+                       class="mt-1 block w-full h-10 border border-gray-300 rounded-md shadow-sm
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-800">Hintergrund-Verlauf (Dark Mode)</h2>
+            <div>
+                <label for="darkBgGradientColor1" class="block text-sm font-medium text-gray-700">Hintergrundfarbe 1 (Dark Mode Verlauf)</label>
+                <input type="color" id="darkBgGradientColor1" name="dark_bg_gradient_color1"
+                       class="mt-1 block w-full h-10 border border-gray-300 rounded-md shadow-sm
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="darkBgGradientColor2" class="block text-sm font-medium text-gray-700">Hintergrundfarbe 2 (Dark Mode Verlauf)</label>
+                <input type="color" id="darkBgGradientColor2" name="dark_bg_gradient_color2"
+                       class="mt-1 block w-full h-10 border border-gray-300 rounded-md shadow-sm
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="logoFile" class="block text-sm font-medium text-gray-700">Logo hochladen (PNG, JPG, SVG)</label>
+                <input type="file" id="logoFile" name="logo_file" accept="image/png, image/jpeg, image/svg+xml"
+                       class="mt-1 block w-full text-sm text-gray-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-md file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-blue-50 file:text-blue-700
+                              hover:file:bg-blue-100 dark:file:bg-gray-800 dark:file:text-white dark:hover:file:bg-gray-700">
+                <div class="mt-2" id="logoPreviewContainer">
+                    <p class="text-sm text-gray-500">Aktuelles Logo:</p>
+                    <img id="currentLogoPreview" src="" alt="Aktuelles Logo" class="mt-2 max-h-24 rounded-md shadow-sm">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                               transition duration-200 ease-in-out transform hover:scale-105">
+                    Einstellungen speichern
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('general.home') }}"
+               class="text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inline-message-container');
+            if (!messageBox) {
+                console.error('Inline message container not found.');
+                return;
+            }
+            const messageText = messageBox.querySelector('p'); 
+            if (!messageText) {
+                console.error('Paragraph element inside inline message container not found.');
+                return;
+            }
+
+            messageBox.classList.remove('success', 'error', 'info');
+            messageText.textContent = message;
+            messageBox.classList.add('show', type);
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300);
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const adminSettingsForm = document.getElementById('adminSettingsForm');
+            const indexTitleText = document.getElementById('indexTitleText');
+            const indexTitleColor = document.getElementById('indexTitleColor');
+            const bgGradientColor1 = document.getElementById('bgGradientColor1');
+            const bgGradientColor2 = document.getElementById('bgGradientColor2');
+            const darkBgGradientColor1 = document.getElementById('darkBgGradientColor1'); // NEW
+            const darkBgGradientColor2 = document.getElementById('darkBgGradientColor2'); // NEW
+            const logoFile = document.getElementById('logoFile');
+            const currentLogoPreview = document.getElementById('currentLogoPreview');
+            const body = document.body;
+            const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
+            const darkModeToggle = document.getElementById('darkModeToggle'); // Get dark mode toggle button
+            const backButton = document.getElementById('backButton'); // Get back button
+
+            // Function to fetch and populate current settings
+            async function fetchAndPopulateSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Fehler beim Abrufen der Einstellungen:', response.status, errorText);
+                        displayInlineMessage('Fehler beim Laden der Einstellungen.', 'error');
+                        return;
+                    }
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        indexTitleText.value = settings.index_title_text || '';
+                        indexTitleColor.value = settings.index_title_color || '#1f2937';
+                        bgGradientColor1.value = settings.bg_gradient_color1 || '#ffb3c1';
+                        bgGradientColor2.value = settings.bg_gradient_color2 || '#a7d9f7';
+                        darkBgGradientColor1.value = settings.dark_bg_gradient_color1 || '#8B0000'; // NEW
+                        darkBgGradientColor2.value = settings.dark_bg_gradient_color2 || '#00008B'; // NEW
+                        
+                        if (settings.logo_path) {
+                            currentLogoPreview.src = settings.logo_path;
+                            currentLogoPreview.classList.remove('hidden');
+                            faviconLink.href = settings.logo_path; // Update favicon
+                        } else {
+                            currentLogoPreview.classList.add('hidden');
+                            faviconLink.href = '{{ url_for("static", filename="img/logo_V2.png") }}'; // Fallback
+                        }
+
+                        // Apply background gradient to this page based on current dark mode state of the body
+                        const isDarkModeCurrent = body.classList.contains('dark');
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback auf Standard, falls Einstellungen fehlen
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                    } else {
+                        displayInlineMessage(result.message || 'Fehler beim Laden der Einstellungen.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen/Parsen der Einstellungen:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler beim Laden der Einstellungen ist aufgetreten.', 'error');
+                }
+            }
+
+            // Handle form submission for saving settings
+            adminSettingsForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const settingsData = {
+                    index_title_text: indexTitleText.value,
+                    index_title_color: indexTitleColor.value,
+                    bg_gradient_color1: bgGradientColor1.value,
+                    bg_gradient_color2: bgGradientColor2.value,
+                    dark_bg_gradient_color1: darkBgGradientColor1.value, // NEW
+                    dark_bg_gradient_color2: darkBgGradientColor2.value  // NEW
+                };
+
+                try {
+                    const response = await fetch('/api/admin_settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(settingsData)
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Fehler beim Speichern der Einstellungen:', response.status, errorText);
+                        displayInlineMessage(`Fehler beim Speichern: Status ${response.status}.`, 'error');
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        // Re-fetch and apply settings to immediately reflect changes on this page
+                        await fetchAndPopulateSettings(); 
+                    } else {
+                        displayInlineMessage(result.message || 'Fehler beim Speichern der Einstellungen.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Senden der Einstellungen:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler beim Speichern der Einstellungen ist aufgetreten.', 'error');
+                }
+            });
+
+            // Handle logo file upload separately
+            logoFile.addEventListener('change', async () => {
+                if (logoFile.files.length === 0) {
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('logo_file', logoFile.files[0]);
+
+                try {
+                    const response = await fetch('/api/upload_logo', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Fehler beim Hochladen des Logos:', response.status, errorText);
+                        displayInlineMessage(`Fehler beim Logo-Upload: Status ${response.status}.`, 'error');
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        if (result.logo_url) {
+                            currentLogoPreview.src = result.logo_url;
+                            currentLogoPreview.classList.remove('hidden');
+                            faviconLink.href = result.logo_url; // Update favicon immediately after upload
+                        }
+                    } else {
+                        displayInlineMessage(result.message || 'Fehler beim Hochladen des Logos.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Senden des Logo-Uploads:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler beim Hochladen des Logos ist aufgetreten.', 'error');
+                }
+            });
+
+            // Dark Mode Toggle Funktionalität
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    // Toggle the 'dark' class on the body immediately
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    
+                    // Re-fetch and apply settings to update background and favicon based on the NEW body class state
+                    await fetchAndPopulateSettings(); 
+
+                } catch (error) {
+                    console.error('Fehler beim Umschalten des Dark Mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            // Back Button Funktionalität
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            // Initial fetch of settings when the page loads
+            await fetchAndPopulateSettings();
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

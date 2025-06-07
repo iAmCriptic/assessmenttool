@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hauptseite</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Body-Stile für Light- und Dark-Mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Die Dark Mode Hintergrundfarben werden nun vollständig über JavaScript gesetzt,
+           basierend auf den Admin-Einstellungen. Die CSS-Klasse 'dark' wird nur für
+           andere Dark Mode-Stile (Textfarben, Box-Schatten etc.) verwendet. */
+        body.dark {
+            color: #e2e8f0;
+        }
+        /* .dark .bg-white wurde entfernt, da die Karten jetzt eine eigene Klasse haben */
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #cbd5e0;
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568;
+        }
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #2d3748;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4;
+        }
+        .dark .bg-blue-600 {
+            background-color: #4299e1;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #63b3ed;
+        }
+        .dark .bg-red-600 {
+            background-color: #e53e3e;
+        }
+        .dark .hover\:bg-red-700:hover {
+            color: #fc8181;
+        }
+        .dark .bg-green-500 {
+            background-color: #48bb78;
+        }
+        .dark .bg-red-500 {
+            background-color: #ef4444;
+        }
+        .dark .bg-yellow-500 {
+            background-color: #f6e05e;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle; /* Vertikale Ausrichtung */
+            color: currentColor; /* Sicherstellen, dass die Farbe vom Elternelement geerbt wird */
+            /* Explizite Font-Family, um sicherzustellen, dass die Icon-Schriftart verwendet wird */
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal; /* Sicherstellen, dass der Stil nicht kursiv ist */
+            font-weight: normal; /* Sicherstellen, dass der Stil nicht fett ist */
+        }
+        /* Spezifische Größe für Flagsome Icons, um sie konsistent zu halten */
+        .fi::before {
+            font-size: 24px; /* Standardgröße für Icons */
+        }
+        /* Sicherstellen, dass das Icon im Dark Mode Toggle sichtbar ist */
+        #darkModeToggle .fi::before, #logoutButton .fi::before {
+            color: inherit; /* Vererbt die Farbe vom Button */
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Logout Button */
+        #darkModeToggle, #logoutButton {
+            background-color: #000000 !important; /* Erzwingt schwarzen Hintergrund */
+            color: #ffffff !important; /* Erzwingt weißes Icon */
+            width: 48px; /* Feste Breite */
+            height: 48px; /* Feste Höhe */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* rounded-lg wird jetzt direkt im HTML angewendet */
+        }
+
+        body.dark #darkModeToggle, body.dark #logoutButton {
+            background-color: #ffffff !important; /* Erzwingt weißen Hintergrund */
+            color: #000000 !important; /* Erzwingt schwarzes Icon */
+        }
+
+        /* Inline Message Styles */
+        .inline-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: fixed; /* Fixpositionierung */
+            top: 1rem; /* Abstand vom oberen Rand */
+            left: 50%; /* Zentrierung horizontal */
+            transform: translateX(-50%); /* Exakte Zentrierung */
+            z-index: 1000; /* Über anderen Elementen */
+            min-width: 300px; /* Mindestbreite */
+            text-align: center;
+        }
+        .inline-message.show {
+            opacity: 1;
+        }
+        .inline-message.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .inline-message.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .inline-message.info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .dark .inline-message.success {
+            background-color: #2f855a;
+            border-color: #38a169;
+            color: #e6fffa;
+        }
+        .dark .inline-message.error {
+            background-color: #c53030;
+            border-color: #e53e3e;
+            color: #fed7d7;
+        }
+        .dark .inline-message.info {
+            background-color: #2b6cb0;
+            border-color: #4299e1;
+            color: #ebf8ff;
+        }
+
+        /* Card Styling */
+        .card-item {
+            background-color: #ffffff; /* White background for Light Mode */
+            color: #1f2937; /* Dark text for Light Mode (text-gray-800 equivalent) */
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+        }
+
+        .dark .card-item {
+            background-color: #000000; /* Black background for Dark Mode (OLED friendly) */
+            color: #e2e8f0; /* Light text for Dark Mode (text-gray-200 equivalent) */
+        }
+
+        .card-item h3 {
+            color: inherit; /* Inherit from card-item to simplify */
+        }
+
+        .card-item p {
+            color: #4b5563; /* Specific gray for paragraphs in Light Mode */
+        }
+
+        .dark .card-item p {
+            color: #a0aec0; /* Lighter gray for paragraphs in Dark Mode */
+        }
+
+        /* Main Content Area Styling */
+        .main-content-area {
+            background-color: #ffffff; /* White background for Light Mode */
+            color: #1f2937; /* Dark text for Light Mode */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark .main-content-area {
+            background-color: #000000; /* Black background for Dark Mode */
+            color: #e2e8f0; /* Light text for Dark Mode */
+        }
+    </style>
+</head>
+<body class="{{ 'dark' if dark_mode_enabled else '' }}">
+    <div id="inline-message-container" class="inline-message"></div>
+
+    <div class="main-content-area p-8 rounded-lg shadow-md w-full max-w-4xl border border-gray-200 relative pt-20">
+        {# Logo oben links #}
+        <div class="absolute top-0 left-0 p-4">
+            <img id="mainLogo" src="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" alt="Logo" class="max-h-16">
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0 p-4">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h1 class="text-3xl font-bold text-center mb-6">Willkommen auf der Hauptseite</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {# Card for Evaluation - Only visible for 'Bewerter' or 'Administrator' #}
+            {% if 'Bewerter' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
+            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                <i class="fi fi-rr-document text-5xl text-blue-600 dark:text-blue-400 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Bewertung</h3>
+                <p class="mb-4">Hier können Sie Stände bewerten.</p>
+                <div class="flex flex-wrap justify-center gap-2 mt-4"> {# Added flex container for buttons #}
+                    <a href="{{ url_for('evaluations.evaluate_page') }}"
+                       class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Bewerten
+                    </a>
+                    <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}" {# Corrected Print Button URL #}
+                       class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        <i class="fi fi-rr-print mr-2"></i> Drucken
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Card for My Evaluations - Only visible for 'Bewerter' or 'Administrator' #}
+            {% if 'Bewerter' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
+            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                <i class="fi fi-rr-list-check text-5xl text-green-600 dark:text-green-400 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Meine Bewertungen</h3>
+                <p class="mb-4">Sehen Sie Ihre bisherigen Bewertungen ein.</p>
+                <a href="{{ url_for('evaluations.view_my_evaluations_page') }}"
+                   class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50
+                          transition duration-200 ease-in-out transform hover:scale-105">
+                    Ansehen
+                </a>
+            </div>
+            {% endif %}
+
+            {# Card for Ranking #}
+            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                <i class="fi fi-rr-trophy text-5xl text-yellow-600 dark:text-yellow-400 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Rangliste</h3>
+                <p class="mb-4">Die aktuelle Rangliste der Stände.</p>
+                <a href="{{ url_for('ranking.view_ranking_page') }}"
+                   class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50
+                          transition duration-200 ease-in-out transform hover:scale-105">
+                    Ansehen
+                </a>
+            </div>
+
+            {# Card for Room Inspections #}
+            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                <i class="fi fi-rr-broom text-5xl text-purple-600 dark:text-purple-400 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Rauminspektionen</h3>
+                <p class="mb-4">Verwalten Sie Rauminspektionen.</p>
+                <a href="{{ url_for('inspections.manage_room_inspections_page') }}" {# URL_FOR ANPASSEN #}
+                   class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50
+                          transition duration-200 ease-in-out transform hover:scale-105">
+                    Verwalten
+                </a>
+            </div>
+
+            {# Card for Warnings #}
+            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                <i class="fi fi-rr-exclamation text-5xl text-red-600 dark:text-red-400 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Verwarnungen</h3>
+                <p class="mb-4">Verwalten Sie Verwarnungen.</p>
+                <a href="{{ url_for('warnings.warnings_page') }}"
+                   class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50
+                          transition duration-200 ease-in-out transform hover:scale-105">
+                    Verwalten
+                </a>
+            </div>
+
+            {# Card for Admin Management (only for admin) #}
+            {% if session.get('is_admin') %}
+            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                <i class="fi fi-rr-settings text-5xl text-gray-700 dark:text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Admin-Verwaltung</h3>
+                <p class="mb-4">Benutzer, Stände, Kriterien und Listen verwalten.</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <a href="{{ url_for('users.manage_users_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Benutzer
+                    </a>
+                    <a href="{{ url_for('stands.manage_stand_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Stände
+                    </a>
+                    <a href="{{ url_for('criteria.manage_criteria_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Kriterien
+                    </a>
+                    <a href="{{ url_for('rooms.manage_rooms_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Räume
+                    </a>
+                    <a href="{{ url_for('general.manage_list_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Listen
+                    </a>
+                    <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Leere Bögen
+                    </a>
+                    <a href="{{ url_for('admin_settings.admin_settings_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Einstellungen
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-8 text-center">
+            <button id="logoutButton"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-base whitespace-nowrap min-w-[160px]
+                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50
+                           transition duration-200 ease-in-out transform hover:scale-105">
+                <i class="fi fi-rr-sign-out-alt mr-2"></i> Abmelden
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inline-message-container');
+            // Ensure the message box has a paragraph element for text, or create one
+            let messageText = messageBox.querySelector('p');
+            if (!messageText) {
+                messageText = document.createElement('p');
+                messageBox.appendChild(messageText);
+            }
+
+            // Clear previous classes
+            messageBox.classList.remove('success', 'error', 'info');
+
+            messageText.textContent = message;
+            messageBox.classList.add('show', type); // Add 'show' and the specific type class
+
+            // Hide the message after 'duration' milliseconds
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                // Optional: Clear text after transition for accessibility/cleanliness
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Should match CSS transition duration
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const logoutButton = document.getElementById('logoutButton');
+            const body = document.body;
+            const mainLogo = document.getElementById('mainLogo');
+            const faviconLink = document.getElementById('faviconLink');
+
+
+            // Function to update the Dark Mode button appearance
+            function updateButtonAppearance() {
+                // The CSS rules already control the colors, here only the icon is set
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>'; // Moon icon
+                // No need to update logoutButton innerHTML here, as it's static text + icon
+            }
+
+            // Set initial state of Dark Mode button
+            updateButtonAppearance();
+
+            // Dark Mode Toggle functionality
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    updateButtonAppearance(); // Update button appearance
+                    await applyAppSettings(); // Re-apply settings to update background
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            // Logout functionality
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("auth.api_logout") }}');
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        displayInlineMessage(data.message, 'success'); // Display success message
+                        setTimeout(() => {
+                            window.location.href = '{{ url_for("auth.login_page") }}'; // Redirect after message is displayed
+                        }, 1500); // Wait 1.5 seconds before redirecting
+                    } else {
+                        displayInlineMessage(data.message || 'Fehler beim Abmelden.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Abmelden aufgetreten.', 'error');
+                }
+            });
+
+            // Function to fetch and apply app settings
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark'); // Get current dark mode state from body class
+
+                        // Apply background gradient based on current mode
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Apply logo
+                        if (settings.logo_url) { // Use logo_url provided by the API
+                            mainLogo.src = settings.logo_url;
+                            faviconLink.href = settings.logo_url; // Update favicon as well
+                        } else {
+                            mainLogo.src = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                        // No inline message here to avoid clutter on home page load
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                    // No inline message here
+                }
+            }
+
+            // Initial application of app settings
+            await applyAppSettings();
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

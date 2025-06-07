@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rauminspektionen</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Body-Stile für Light- und Dark-Mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            /* Changed from 'align-items: center' to 'flex-start' for better vertical stacking on small screens */
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Standard-Textfarbe für Light Mode Body, kann von Elementen überschrieben werden */
+            color: #1f2937; /* text-gray-900 */
+        }
+
+        /* Adjust body alignment for larger screens to re-center if desired */
+        @media (min-width: 768px) { /* md breakpoint in Tailwind CSS */
+            body {
+                align-items: center; /* Revert to center alignment for larger screens */
+            }
+        }
+
+        /* Die Dark Mode Hintergrundfarben werden nun vollständig über JavaScript gesetzt,
+           basierend auf den Admin-Einstellungen. Die CSS-Klasse 'dark' wird nur für
+           andere Dark Mode-Stile (Textfarben, Box-Schatten etc.) verwendet. */
+        body.dark {
+            color: #e2e8f0; /* General text color for dark mode body */
+        }
+        /* Allgemeine Dark Mode Überschreibungen */
+        .dark .text-black { /* Ensure black text becomes white in dark mode */
+            color: #e2e8f0 !important; /* Added !important */
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0 !important; /* Light text for elements that are gray-800 in light mode */
+        }
+        .dark .text-gray-600 {
+            color: #cbd5e0 !important; /* Lighter gray for elements that are gray-600 in light mode */
+        }
+        .dark .text-gray-700 { /* For table header text */
+            color: #e2e8f0 !important; /* Added !important */
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568 !important; /* Darker border in dark mode */
+        }
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #2d3748 !important;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed !important;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4 !important;
+        }
+        .dark .bg-blue-600 {
+            background-color: #4299e1 !important;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #63b3ed !important;
+        }
+        .dark .bg-red-600 {
+            background-color: #e53e3e !important;
+        }
+        .dark .hover\:bg-red-700:hover {
+            color: #fc8181 !important;
+        }
+        .dark .bg-green-500 {
+            background-color: #48bb78 !important;
+        }
+        .dark .bg-red-500 {
+            background-color: #ef4444 !important;
+        }
+        .dark .bg-yellow-500 {
+            background-color: #f6e05e !important;
+        }
+        .dark .bg-purple-600 {
+            background-color: #805ad5 !important;
+        }
+        .dark .hover\:bg-purple-700:hover {
+            background-color: #9f7aea !important;
+        }
+        .dark .text-purple-600 {
+            color: #b794f4 !important;
+        }
+        .dark .text-gray-300 {
+            color: #a0aec0 !important;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        /* Sicherstellen, dass das Icon im Dark Mode Toggle sichtbar ist */
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit !important;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Inline Message Styles (copied from home.html) */
+        .inline-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: fixed; /* Fixpositionierung */
+            top: 1rem; /* Abstand vom oberen Rand */
+            left: 50%; /* Zentrierung horizontal */
+            transform: translateX(-50%); /* Exakte Zentrierung */
+            z-index: 1000; /* Über anderen Elementen */
+            min-width: 300px; /* Mindestbreite */
+            text-align: center;
+        }
+        .inline-message.show {
+            opacity: 1;
+        }
+        .inline-message.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .inline-message.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .inline-message.info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .dark .inline-message.success {
+            background-color: #2f855a;
+            border-color: #38a169;
+            color: #e6fffa;
+        }
+        .dark .inline-message.error {
+            background-color: #c53030;
+            border-color: #e53e3e;
+            color: #fed7d7;
+        }
+        .dark .inline-message.info {
+            background-color: #2b6cb0;
+            border-color: #4299e1;
+            color: #ebf8ff;
+        }
+
+        /* Main Content Area Styling */
+        .main-content-area {
+            background-color: #ffffff !important; /* White background for Light Mode - Added !important */
+            color: #1f2937 !important; /* Dark text for Light Mode - Added !important */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex; /* Make it a flex container */
+            flex-direction: column; /* Stack children vertically by default */
+            align-items: center; /* Center horizontally in column layout */
+        }
+
+        .dark .main-content-area {
+            background-color: #000000 !important; /* Black background for Dark Mode - Added !important */
+            color: #e2e8f0 !important; /* Light text for Dark Mode - Added !important */
+        }
+
+        /* Responsive Kommentare und Popup */
+        .comment-cell {
+            position: relative;
+            cursor: pointer; /* Zeigt an, dass es klickbar ist */
+        }
+
+        /* Vollständiges Kommentar-Modal */
+        #fullCommentModal {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        #fullCommentModal > div {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive Design für Tabelle vs. Karten */
+        /* Standardmäßig (mobil zuerst): Tabelle versteckt, Karten sichtbar */
+        #roomInspectionsTableContainer {
+            display: none; /* Tabelle auf kleinen Bildschirmen verstecken */
+        }
+
+        #roomInspectionsCardsContainer {
+            display: grid; /* Karten auf kleinen Bildschirmen sichtbar */
+            grid-template-columns: 1fr; /* Eine Spalte für Karten */
+            gap: 1rem; /* Added gap between cards for better spacing */
+            width: 100%; /* Ensure cards container takes full width of its parent */
+        }
+
+        /* Bei mittleren Bildschirmen (md) und größer: Tabelle sichtbar, Karten versteckt */
+        @media (min-width: 768px) { /* md breakpoint in Tailwind CSS */
+            #roomInspectionsTableContainer {
+                display: block; /* Tabelle anzeigen */
+            }
+            #roomInspectionsCardsContainer {
+                display: none; /* Karten verstecken */
+            }
+            /* Reset main-content-area alignment for wider screens if needed, though 'align-items: center' on body handles centering */
+            .main-content-area {
+                align-items: center; /* Center content horizontally on larger screens */
+            }
+        }
+
+        /* Anpassung für gleich große Buttons */
+        .action-buttons-group {
+            display: flex;
+            gap: 0.5rem; /* Abstand zwischen den Buttons */
+        }
+        .action-buttons-group .update-inspection-btn {
+            flex: 1; /* Buttons nehmen gleichen Platz ein */
+            white-space: nowrap; /* Verhindert Zeilenumbruch im Button-Text */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div id="inline-message-container" class="inline-message"></div>
+
+    <div id="mainContentArea" class="main-content-area p-8 rounded-lg shadow-md w-full max-w-4xl relative pt-20 border border-gray-200 bg-white !important text-gray-900 !important">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0 p-4">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0 p-4">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h2 id="mainTitle" class="text-3xl font-bold mb-6 text-center text-black !important">Rauminspektionen</h2>
+
+        {# Container für die Tabelle (nur auf größeren Bildschirmen sichtbar) #}
+        <div id="roomInspectionsTableContainer" class="overflow-x-auto hidden md:block">
+            {# Rauminspektionstabelle wird hier dynamisch per JavaScript geladen #}
+        </div>
+
+        {# Container für die Karten (nur auf kleineren Bildschirmen sichtbar) #}
+        <div id="roomInspectionsCardsContainer" class="grid grid-cols-1 gap-4 md:hidden">
+            {# Rauminspektionskarten werden hier dynamisch per JavaScript geladen #}
+        </div>
+
+        <p id="noInspectionsMessage" class="text-center hidden mt-4 text-gray-600 dark:text-gray-400">Es liegen noch keine Rauminspektionen vor.</p>
+
+
+        <div class="mt-8 text-center">
+            <a id="backToHomeLink" href="{{ url_for('general.home') }}"
+               class="font-semibold transition duration-200 ease-in-out text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    {# Vollständiges Kommentar-Modal #}
+    <div id="fullCommentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div id="modalContent" class="p-6 rounded-lg shadow-xl max-w-lg w-full m-4 relative bg-white text-gray-700 dark:bg-gray-900 dark:text-white">
+            <button id="closeCommentModal" class="absolute top-3 right-3 text-2xl font-bold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">&times;</button>
+            <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Vollständiger Kommentar</h3>
+            <p id="modalCommentText" class="whitespace-pre-wrap text-gray-700 dark:text-gray-300"></p>
+        </div>
+    </div>
+
+    <script>
+        // Funktion zum Anzeigen von Inline-Nachrichten (Angepasst an home.html)
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inline-message-container');
+            let messageText = messageBox.querySelector('p');
+            if (!messageText) {
+                messageText = document.createElement('p');
+                messageBox.appendChild(messageText);
+            }
+
+            messageBox.classList.remove('success', 'error', 'info'); // Alte Klassen entfernen
+            messageText.textContent = message;
+            messageBox.classList.add('show', type); // 'show' und den spezifischen Typ hinzufügen
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Sollte zur CSS-Übergangsdauer passen
+            }, duration);
+        }
+
+        // Funktion zum Formatieren von Datum und Uhrzeit
+        function formatDatetime(value) {
+            if (value) {
+                try {
+                    const dt_object = new Date(value);
+                    const day = String(dt_object.getDate()).padStart(2, '0');
+                    const month = String(dt_object.getMonth() + 1).padStart(2, '0');
+                    const hours = String(dt_object.getHours()).padStart(2, '0');
+                    const minutes = String(dt_object.getMinutes()).padStart(2, '0');
+                    return `${day}.${month}. - ${hours}:${minutes}`;
+                } catch (e) {
+                    return value; // Fallback, falls Format ungültig ist
+                }
+            }
+            return 'N/A';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const mainContentArea = document.getElementById('mainContentArea'); // Umbenannt
+            const mainTitle = document.getElementById('mainTitle');
+            const noInspectionsMessage = document.getElementById('noInspectionsMessage');
+            const backToHomeLink = document.getElementById('backToHomeLink');
+            const roomInspectionsTableContainer = document.getElementById('roomInspectionsTableContainer');
+            const roomInspectionsCardsContainer = document.getElementById('roomInspectionsCardsContainer');
+            const fullCommentModal = document.getElementById('fullCommentModal');
+            const closeCommentModalBtn = document.getElementById('closeCommentModal');
+            const modalContent = document.getElementById('modalContent');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalCommentText = document.getElementById('modalCommentText');
+
+            // Funktion zum Abrufen und Anwenden der App-Einstellungen (für Hintergrundfarben und Favicon)
+            // Angepasst an home.html
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark'); // Aktuellen Dark Mode Zustand aus Body-Klasse abrufen
+
+                        // Hintergrundgradient basierend auf dem aktuellen Modus anwenden
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback auf Standard, falls Einstellungen fehlen
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Favicon anwenden (Logo ist hier nicht relevant, da es keine Hauptseite ist)
+                        const faviconLink = document.getElementById('faviconLink');
+                        if (settings.logo_path) { // home.html uses logo_url, but backend provides logo_path
+                            faviconLink.href = settings.logo_path;
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+
+            // Funktion zum Aktualisieren des Aussehens des Dark Mode Buttons
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>';
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>';
+            }
+
+            // Initialen Zustand des Dark Mode Buttons setzen
+            updateButtonAppearance();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    // Body-Klasse direkt hier aktualisieren, um CSS-Selektoren zu triggern
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                        // Wenn Dark Mode aktiviert wird, die Textfarbe der Überschrift auf Weiß setzen
+                        mainTitle.classList.remove('text-black');
+                        mainTitle.classList.add('dark:text-white');
+                    } else {
+                        body.classList.remove('dark');
+                        // Wenn Light Mode aktiviert wird, die Textfarbe der Überschrift auf Schwarz setzen
+                        mainTitle.classList.remove('dark:text-white');
+                        mainTitle.classList.add('text-black');
+                    }
+
+                    updateButtonAppearance(); // Update button appearance
+                    await applyAppSettings(); // Re-apply settings to update background
+                    // Nachdem der Dark Mode umgeschaltet wurde, die Rauminspektionen neu rendern,
+                    // damit die Farben der Tabelle/Karten aktualisiert werden
+                    fetchAndRenderRoomInspections();
+                } catch (error) {
+                    console.error('Fehler beim Umschalten des Dark Mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            // Funktion zum Abrufen und Rendern von Rauminspektionen
+            async function fetchAndRenderRoomInspections() {
+                try {
+                    const response = await fetch('/api/room_inspections');
+                    const data = await response.json();
+
+                    // Den aktuellen Dark Mode Status des Body-Elements abrufen
+                    const isBodyDark = body.classList.contains('dark');
+                    console.log('fetchAndRenderRoomInspections: isBodyDark for rendering:', isBodyDark); // Debugging
+
+                    if (data.success && data.room_inspections.length > 0) {
+                        noInspectionsMessage.classList.add('hidden');
+                        
+                        // Dynamische Klassen für Tabelle/Karten mit Tailwind dark: Präfixen
+                        // Standardmäßig Light Mode-Farben, dark: Präfix für Dark Mode-Farben
+                        const tableBgClass = isBodyDark ? 'bg-gray-900' : 'bg-white'; 
+                        const tableHeaderBgClass = isBodyDark ? 'bg-gray-800' : 'bg-gray-100'; 
+                        const tableHeaderTextClass = isBodyDark ? 'text-white' : 'text-gray-700';
+                        const tableDividerClass = isBodyDark ? 'divide-gray-700' : 'divide-gray-200';
+                        const tableRowHoverClass = isBodyDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50';
+                        const cellTextColor = isBodyDark ? 'text-white' : 'text-gray-900'; 
+                        const subTextColor = isBodyDark ? 'text-gray-400' : 'text-gray-700'; 
+                        const readMoreLinkClass = isBodyDark ? 'text-blue-400 hover:text-blue-200' : 'text-blue-500 hover:underline';
+
+                        let tableHtml = `
+                            <table class="min-w-full ${tableBgClass} rounded-lg shadow-md overflow-hidden">
+                                <thead class="${tableHeaderBgClass} ${tableHeaderTextClass}">
+                                    <tr>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Raum</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Stände im Raum</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Sauberkeit</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Zuletzt inspiziert von</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Datum / Zeit</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Kommentar</th>
+                                        <th class="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y ${tableDividerClass}">
+                        `;
+
+                        let cardsHtml = '';
+
+                        data.room_inspections.forEach(room => {
+                            const standsList = room.stands.map(s => s.name).join(', ') || 'Keine Stände zugeordnet';
+                            const isCleanStatus = room.is_clean ? 'Sauber' : 'Nicht sauber';
+                            const statusColorClass = room.is_clean ? 'text-green-500 font-semibold' : 'text-red-500 font-semibold'; // Farben für Status
+                            const commentText = room.comment || 'Kein Kommentar';
+                            const displayComment = commentText.length > 15 ? commentText.substring(0, 15) + '...' : commentText;
+                            const fullCommentDisplay = commentText.length > 15 ? `<span class="read-more cursor-pointer ${readMoreLinkClass}" data-full-comment="${commentText}">Mehr lesen</span>` : '';
+
+                            // Tabellenzeile
+                            tableHtml += `
+                                <tr class="${tableRowHoverClass} transition-colors duration-150">
+                                    <td class="py-3 px-4 ${cellTextColor}">${room.room_name}</td>
+                                    <td class="py-3 px-4 ${subTextColor} text-sm">${standsList}</td>
+                                    <td class="py-3 px-4 ${statusColorClass}">${isCleanStatus}</td>
+                                    <td class="py-3 px-4 ${subTextColor}">${room.inspector_display_name || 'N/A'}</td>
+                                    <td class="py-3 px-4 ${subTextColor}">${formatDatetime(room.inspection_timestamp)}</td>
+                                    <td class="py-3 px-4 ${subTextColor} comment-cell" data-full-comment="${commentText}">
+                                        ${displayComment} ${fullCommentDisplay}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="action-buttons-group">
+                                            <button data-room-id="${room.room_id}" data-is-clean="1"
+                                                    class="update-inspection-btn inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg text-xs
+                                                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                                <span class="mr-1"><i class="fi fi-rr-check"></i></span>
+                                                Sauber
+                                            </button>
+                                            <button data-room-id="${room.room_id}" data-is-clean="0"
+                                                    class="update-inspection-btn inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-xs
+                                                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                                <span class="mr-1"><i class="fi fi-rr-cross"></i></span>
+                                                Nicht sauber
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+
+                            // Karte für die mobile Ansicht
+                            cardsHtml += `
+                                <div class="${tableBgClass} rounded-lg shadow-md p-4 mb-4 w-full"> {# Added w-full here #}
+                                    <h3 class="text-lg font-semibold ${cellTextColor} mb-2">${room.room_name}</h3>
+                                    <p class="${subTextColor} text-sm mb-1"><strong>Stände:</strong> ${standsList}</p>
+                                    <p class="${statusColorClass} text-sm mb-1"><strong>Sauberkeit:</strong> ${isCleanStatus}</p>
+                                    <p class="${subTextColor} text-sm mb-1"><strong>Inspiziert von:</strong> ${room.inspector_display_name || 'N/A'}</p>
+                                    <p class="${subTextColor} text-sm mb-2"><strong>Datum/Zeit:</strong> ${formatDatetime(room.inspection_timestamp)}</p>
+                                    <p class="${subTextColor} text-sm mb-4 comment-cell" data-full-comment="${commentText}">
+                                        <strong>Kommentar:</strong> ${displayComment} ${fullCommentDisplay}
+                                    </p>
+                                    <div class="action-buttons-group">
+                                        <button data-room-id="${room.room_id}" data-is-clean="1"
+                                                class="update-inspection-btn inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg text-xs
+                                                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                            <span class="mr-1"><i class="fi fi-rr-check"></i></span>
+                                            Sauber
+                                        </button>
+                                        <button data-room-id="${room.room_id}" data-is-clean="0"
+                                                class="update-inspection-btn inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-xs
+                                                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                                                <span class="mr-1"><i class="fi fi-rr-cross"></i></span>
+                                                Nicht sauber
+                                            </button>
+                                        </div>
+                                    </div> {# THIS WAS THE PROBLEM: PREVIOUSLY IT WAS </td></tr> #}
+                                </div>
+                            `;
+                        });
+
+                        tableHtml += `</tbody></table>`;
+                        roomInspectionsTableContainer.innerHTML = tableHtml;
+                        roomInspectionsCardsContainer.innerHTML = cardsHtml;
+
+
+                        // Event-Listener für Update-Buttons nach dem Rendern anhängen
+                        attachUpdateListeners();
+                        // Event-Listener für die Kommentar-Anzeige anhängen
+                        attachCommentListeners();
+
+                    } else {
+                        roomInspectionsTableContainer.innerHTML = '';
+                        roomInspectionsCardsContainer.innerHTML = '';
+                        noInspectionsMessage.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Rauminspektionen:', error);
+                    displayInlineMessage('Ein Fehler ist beim Laden der Rauminspektionen aufgetreten.', 'error');
+                    roomInspectionsTableContainer.innerHTML = '';
+                    roomInspectionsCardsContainer.innerHTML = '';
+                    noInspectionsMessage.classList.remove('hidden');
+                }
+            }
+
+            // Funktion zum Anhängen von Event-Listenern an Update-Buttons
+            function attachUpdateListeners() {
+                document.querySelectorAll('.update-inspection-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const roomId = event.currentTarget.dataset.roomId;
+                        const isClean = parseInt(event.currentTarget.dataset.isClean);
+
+                        // Kommentar immer abfragen
+                        let comment = prompt('Bitte geben Sie einen Kommentar ein (optional):');
+                        if (comment === null) { // Benutzer hat auf Abbrechen geklickt
+                            return;
+                        }
+
+                        try {
+                            const response = await fetch('/api/room_inspections', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    room_id: roomId,
+                                    is_clean: isClean,
+                                    comment: comment
+                                })
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                displayInlineMessage(result.message, 'success');
+                                // Erneut abrufen und rendern, um die Tabelle zu aktualisieren
+                                fetchAndRenderRoomInspections();
+                            } else {
+                                displayInlineMessage(result.message, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Fehler beim Aktualisieren der Rauminspektion:', error);
+                            displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten.', 'error');
+                        }
+                    });
+                });
+            }
+
+            // Funktion zum Behandeln der Kommentar-Anzeige (vollständigen Kommentar im Modal anzeigen)
+            function attachCommentListeners() {
+                document.querySelectorAll('.comment-cell').forEach(cell => {
+                    const fullComment = cell.dataset.fullComment;
+                    const readMoreSpan = cell.querySelector('.read-more');
+
+                    if (fullComment && fullComment.length > 15) {
+                        // Event-Listener für den "Mehr lesen"-Span
+                        if (readMoreSpan) {
+                            readMoreSpan.addEventListener('click', (event) => {
+                                event.stopPropagation(); // Verhindert, dass das Klicken auf den Link das übergeordnete Element auslöst
+                                modalCommentText.textContent = fullComment;
+                                fullCommentModal.classList.remove('hidden');
+                            });
+                        }
+                        // Event-Listener für die gesamte Zelle (wenn nicht auf "Mehr lesen" geklickt wird)
+                        cell.addEventListener('click', (event) => {
+                            if (!event.target.classList.contains('read-more')) {
+                                modalCommentText.textContent = fullComment;
+                                fullCommentModal.classList.remove('hidden');
+                            }
+                        });
+                    }
+                });
+
+                closeCommentModalBtn.addEventListener('click', () => {
+                    fullCommentModal.classList.add('hidden');
+                });
+
+                // Modal schließen, wenn außerhalb geklickt wird
+                fullCommentModal.addEventListener('click', (event) => {
+                    if (event.target === fullCommentModal) {
+                        fullCommentModal.classList.add('hidden');
+                    }
+                });
+            }
+
+
+            // Initiales Abrufen und Rendern von Rauminspektionen
+            // Dies muss nach applyAppSettings erfolgen, um den korrekten Dark Mode Status zu haben
+            // oder fetchAndRenderRoomInspections muss den Dark Mode Status selbst abrufen.
+            // Da applyAppSettings den Body-Class setzt, rufen wir es zuerst auf.
+            await applyAppSettings();
+            fetchAndRenderRoomInspections(); // Jetzt wird es mit dem korrekten Body-Class gerendert
+
+            // Auf Nachrichten über URL-Parameter prüfen (z.B. von einer Weiterleitung)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registrierung
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

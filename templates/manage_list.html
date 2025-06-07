@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listen verwalten</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark {
+            color: #e2e8f0;
+        }
+        /* Dark Mode für Hauptcontainer und Karten */
+        .dark .bg-white {
+            background-color: #000000;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0;
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        /* Adjusted for light mode white background, dark mode remains as is */
+        .content-card-section {
+            background-color: #ffffff; /* White background for light mode */
+            color: #000000; /* Black text for light mode */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow for light mode */
+            border: none; /* Remove border in light mode */
+        }
+        .dark .content-card-section {
+            background-color: #000000; /* Black background in dark mode */
+            color: #e2e8f0; /* Light text in dark mode */
+            border-color: #4a5568; /* Keep dark mode border for contrast */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3); /* Dark mode shadow */
+        }
+
+        /* Ensure specific text elements are black in light mode */
+        .content-card-section h3 {
+            color: #000000; /* Black for h3 in light mode */
+        }
+        .content-card-section p {
+            color: #374151; /* Darker gray for p in light mode, close to black */
+        }
+        /* Dark mode overrides for text within content-card-section */
+        .dark .content-card-section h3 {
+            color: #e2e8f0;
+        }
+        .dark .content-card-section p {
+            color: #a0aec0;
+        }
+
+
+        .dark .text-gray-700 {
+            color: #ffffff;
+        }
+        .dark .border {
+            border-color: #555555;
+        }
+        .dark .focus\:ring-orange-400:focus {
+            --tw-ring-color: #fbd38d;
+        }
+        .dark .bg-orange-500 {
+            background-color: #c05621;
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #9c4221;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #4299e1;
+        }
+        .dark .bg-gray-200 {
+            background-color: #1c1c1c;
+        }
+        .dark .text-gray-700 {
+            color: #e2e8f0;
+        }
+        .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #4a5568;
+        }
+        .dark .hover\:bg-gray-50:hover {
+            background-color: #1a202c;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Inline Message Styling */
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            border-width: 1px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .message-box.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message-box.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .message-box.info {
+            background-color: #cce5ff;
+            color: #004085;
+            border-color: #b8daff;
+        }
+
+        .dark .message-box.success {
+            background-color: #0f5132;
+            color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .dark .message-box.error {
+            background-color: #721c24;
+            color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .dark .message-box.info {
+            background-color: #004085;
+            color: #cce5ff;
+            border-color: #1a5a9a;
+        }
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+        .dark .modal-content {
+            background-color: #1c1c1c;
+            color: #e2e8f0;
+        }
+        /* Ensure the modal content text is readable in both modes */
+        .modal-content p {
+            color: #000000; /* Black for light mode */
+        }
+        .dark .modal-content p {
+            color: #e2e8f0; /* Light text for dark mode */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl relative pt-20">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Listen verwalten</h2>
+
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="message-box" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        <div class="p-6 rounded-lg content-card-section mb-8">
+            <h3 class="text-xl font-semibold mb-4">Rangliste zurücksetzen</h3>
+            <p class="mb-4">
+                Alle eingetragenen Bewertungen und die daraus resultierende Rangliste werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <button id="resetRankingBtn"
+                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Rangliste jetzt zurücksetzen
+            </button>
+        </div>
+
+        <div class="p-6 rounded-lg content-card-section mb-8">
+            <h3 class="text-xl font-semibold mb-4">Rauminspektionen zurücksetzen</h3>
+            <p class="mb-4">
+                Alle eingetragenen Rauminspektionen werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <button id="resetRoomInspectionsBtn"
+                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Rauminspektionen jetzt zurücksetzen
+            </button>
+        </div>
+
+        <div class="p-6 rounded-lg content-card-section mb-8">
+            <h3 class="text-xl font-semibold mb-4">Verwarnungen zurücksetzen</h3>
+            <p class="mb-4">
+                Alle eingetragenen Verwarnungen werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <button id="resetWarningsBtn"
+                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Alle Verwarnungen zurücksetzen
+            </button>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('general.home') }}"
+               class="text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
+                Zurück zur Hauptseite
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inlineMessage');
+            const messageText = document.getElementById('inlineMessageText');
+
+            messageText.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else if (type === 'info') {
+                messageBox.classList.add('info');
+            }
+
+            // Hide the message after 'duration' milliseconds
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Should match CSS transition duration
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const faviconLink = document.getElementById('faviconLink');
+            const resetRankingBtn = document.getElementById('resetRankingBtn');
+            const resetRoomInspectionsBtn = document.getElementById('resetRoomInspectionsBtn');
+            const resetWarningsBtn = document.getElementById('resetWarningsBtn');
+
+            // Function to update the Dark Mode button appearance
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>';
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>';
+            }
+
+            // Set initial state of Dark Mode button
+            updateButtonAppearance();
+
+            // Function to fetch and apply app settings (background and favicon)
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark');
+
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Logo für Favicon aktualisieren
+                        if (settings.logo_url) {
+                            faviconLink.href = settings.logo_url;
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            // Initial application of app settings
+            await applyAppSettings();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    updateButtonAppearance();
+                    await applyAppSettings(); // Re-apply settings to update background
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            // Function to handle reset actions via API
+            async function handleResetAction(actionType, confirmationMessage) {
+                // Custom confirmation message box instead of alert/confirm
+                const confirmation = await showConfirmation(confirmationMessage);
+                if (!confirmation) {
+                    return; // User cancelled
+                }
+
+                try {
+                    const response = await fetch('/api/reset_data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ action: actionType })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        // Optional: Reload page or update relevant sections if needed
+                        // For simplicity, we'll just display message here.
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error(`Fehler beim Zurücksetzen von ${actionType}:`, error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten.', 'error');
+                }
+            }
+
+            // Custom Confirmation Modal (replaces alert/confirm)
+            function showConfirmation(message) {
+                return new Promise((resolve) => {
+                    const confirmModal = document.createElement('div');
+                    confirmModal.className = 'modal';
+                    confirmModal.innerHTML = `
+                        <div class="modal-content p-6 rounded-lg shadow-md">
+                            <p class="mb-4 text-gray-800 dark:text-gray-200">${message}</p>
+                            <div class="flex justify-end gap-4">
+                                <button id="confirmCancel" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg
+                                                                  focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                                                                  transition duration-200 ease-in-out transform hover:scale-105">
+                                    Abbrechen
+                                </button>
+                                <button id="confirmOk" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg
+                                                              focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50
+                                                              transition duration-200 ease-in-out transform hover:scale-105">
+                                    Löschen
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(confirmModal);
+
+                    document.getElementById('confirmOk').addEventListener('click', () => {
+                        confirmModal.remove();
+                        resolve(true);
+                    });
+                    document.getElementById('confirmCancel').addEventListener('click', () => {
+                        confirmModal.remove();
+                        resolve(false);
+                    });
+                    confirmModal.style.display = 'flex';
+                });
+            }
+
+            // Event listeners for reset buttons
+            resetRankingBtn.addEventListener('click', () => {
+                handleResetAction('reset_ranking', 'Sind Sie sicher, dass Sie alle Bewertungen und die Rangliste unwiderruflich löschen möchten?');
+            });
+
+            resetRoomInspectionsBtn.addEventListener('click', () => {
+                handleResetAction('reset_room_inspections', 'Sind Sie sicher, dass Sie alle Rauminspektionen unwiderruflich löschen möchten?');
+            });
+
+            resetWarningsBtn.addEventListener('click', () => {
+                handleResetAction('reset_warnings', 'Sind Sie sicher, dass Sie alle Verwarnungen unwiderruflich löschen möchten?');
+            });
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

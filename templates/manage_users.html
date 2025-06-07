@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benutzerverwaltung</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        /* Grundlegende Body-Stile für Light- und Dark-Mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+        .dark .text-gray-600 {
+            color: #cbd5e0;
+        }
+        .dark .border-gray-200 {
+            border-color: #4a5568;
+        }
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #2d3748;
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #90cdf4;
+        }
+        .dark .bg-blue-600 {
+            background-color: #4299e1;
+        }
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #63b3ed;
+        }
+        .dark .bg-red-600 {
+            background-color: #e53e3e;
+        }
+        .dark .hover\:bg-red-700:hover {
+            color: #fc8181;
+        }
+        .dark .bg-green-500 {
+            background-color: #48bb78;
+        }
+        .dark .bg-red-500 {
+            background-color: #ef4444;
+        }
+        .dark .bg-yellow-500 {
+            background-color: #f6e05e;
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle;
+            color: currentColor;
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal;
+            font-weight: normal;
+        }
+        .fi::before {
+            font-size: 24px;
+        }
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit;
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Back Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        /* Inline Message Styles */
+        .inline-message {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            min-width: 300px;
+            text-align: center;
+        }
+        .inline-message.show {
+            opacity: 1;
+        }
+        .inline-message.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .inline-message.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .inline-message.info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .dark .inline-message.success {
+            background-color: #2f855a;
+            border-color: #38a169;
+            color: #e6fffa;
+        }
+        .dark .inline-message.error {
+            background-color: #c53030;
+            border-color: #e53e3e;
+            color: #fed7d7;
+        }
+        .dark .inline-message.info {
+            background-color: #2b6cb0;
+            border-color: #4299e1;
+            color: #ebf8ff;
+        }
+
+        /* Main Content Area Styling */
+        .main-content-area {
+            background-color: #ffffff;
+            color: #1f2937;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark .main-content-area {
+            background-color: #000000;
+            color: #e2e8f0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .dark .modal-content {
+            background-color: #1a202c; /* Darker background for modal in dark mode */
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .dark .close-button {
+            color: #e2e8f0;
+        }
+        .dark .close-button:hover,
+        .dark .close-button:focus {
+            color: white;
+        }
+        /* Style for form inputs */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 0.375rem;
+            background-color: #ffffff; /* White background */
+            color: #1f2937; /* Dark text */
+            transition: all 0.2s ease-in-out;
+        }
+
+        .dark .form-input {
+            background-color: #000000; /* Black background for inputs in dark mode */
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #63b3ed;
+            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.5);
+        }
+
+        /* Style for select multiple */
+        .form-select-multiple {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 0.375rem;
+            background-color: #ffffff; /* White background */
+            color: #1f2937; /* Dark text */
+            height: 120px; /* Adjust height as needed */
+            overflow-y: auto;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .dark .form-select-multiple {
+            background-color: #000000; /* Black background for inputs in dark mode */
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+
+        .form-select-multiple:focus {
+            outline: none;
+            border-color: #63b3ed;
+            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.5);
+        }
+
+        .form-select-multiple option {
+            padding: 0.5rem;
+        }
+
+        .form-select-multiple option:checked {
+            background-color: #4299e1; /* Blue background for selected options */
+            color: white;
+        }
+
+        /* Additional styling for the content divs (forms and table container) */
+        .content-section {
+            background-color: #ffffff; /* White background in light mode */
+            color: #1f2937; /* Dark text in light mode */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark .content-section {
+            background-color: #000000; /* Black background in dark mode */
+            color: #e2e8f0; /* Light text in dark mode */
+        }
+
+        /* Specific styles for labels */
+        .form-label {
+            color: #1f2937; /* Black text for labels in light mode */
+        }
+        .dark .form-label {
+            color: #e2e8f0; /* White text for labels in dark mode */
+        }
+
+        /* Table specific overrides for light mode */
+        table.min-w-full {
+            background-color: #ffffff; /* Ensure table background is white in light mode */
+        }
+        table.min-w-full thead {
+            background-color: #ffffff; /* Ensure table header background is white in light mode */
+            color: #000000; /* Explicit black text for table header in light mode */
+        }
+        table.min-w-full tbody {
+            color: #000000; /* Explicit black text for table body in light mode */
+        }
+        table.min-w-full tbody tr {
+            background-color: #ffffff; /* Ensure table row background is white in light mode */
+        }
+        table.min-w-full tbody tr:hover {
+            background-color: #f0f0f0; /* Slightly gray on hover in light mode */
+        }
+        /* Table specific overrides for dark mode */
+        .dark table.min-w-full {
+            background-color: #000000; /* Black background in dark mode */
+            color: #e2e8f0; /* Light text in dark mode */
+        }
+        .dark table.min-w-full thead {
+            background-color: #1a202c; /* Dark background for table header in dark mode (Tailwind gray-900 equivalent) */
+            color: #ffffff; /* Explicit white text for table header in dark mode */
+        }
+        .dark table.min-w-full tbody {
+            color: #ffffff; /* Light text for table body in dark mode */
+        }
+        .dark table.min-w-full tbody tr {
+            background-color: #000000; /* Black background for table row in dark mode */
+        }
+        .dark table.min-w-full tbody tr:hover {
+            background-color: #2d3748; /* Darker gray on hover in dark mode */
+        }
+
+        /* Explicit colors for h1 and h2 headings */
+        h1, h2 {
+            color: #000000; /* Explicit black for light mode */
+            transition: color 0.3s ease;
+        }
+        body.dark h1, body.dark h2 {
+            color: #ffffff; /* Explicit white for dark mode */
+        }
+
+    </style>
+</head>
+<body class="{{ 'dark' if dark_mode_enabled else '' }}">
+    <div id="inline-message-container" class="inline-message"></div>
+
+    <div class="main-content-area p-8 rounded-lg shadow-md w-full max-w-4xl border border-gray-200 relative pt-20 pb-20">
+        {# Zurück Button (oben links - angepasst an evaluation.html Stil) #}
+        <div class="absolute top-0 left-0 p-4">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0 p-4">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg">
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        <h1 class="text-3xl font-bold text-center mb-8">Benutzerverwaltung</h1>
+
+        <div class="mb-8 p-6 rounded-lg shadow-inner content-section">
+            <h2 class="text-xl font-semibold mb-4">Neuen Benutzer anlegen</h2>
+            <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="newUsername" class="block text-sm font-medium form-label">Benutzername:</label>
+                    <input type="text" id="newUsername" name="username" required class="form-input">
+                </div>
+                <div>
+                    <label for="newPassword" class="block text-sm font-medium form-label">Passwort:</label>
+                    <input type="password" id="newPassword" name="password" required class="form-input">
+                </div>
+                <div>
+                    <label for="newDisplayName" class="block text-sm font-medium form-label">Anzeigename:</label>
+                    <input type="text" id="newDisplayName" name="display_name" required class="form-input">
+                </div>
+                <div>
+                    <label for="newRoles" class="block text-sm font-medium form-label">Rollen (Mehrfachauswahl mit Strg/Cmd):</label>
+                    <select id="newRoles" name="role_ids" multiple required class="form-select-multiple">
+                        <!-- Rollen werden dynamisch geladen -->
+                    </select>
+                </div>
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                                                  transition duration-200 ease-in-out transform hover:scale-105">
+                        <i class="fi fi-rr-plus-circle mr-2"></i> Benutzer anlegen
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mb-8 p-6 rounded-lg shadow-inner content-section">
+            <h2 class="text-xl font-semibold mb-4">Benutzer per Excel hochladen</h2>
+            <form id="uploadUsersExcelForm">
+                <div class="mb-4">
+                    <label for="excelFile" class="block text-sm font-medium form-label">Excel-Datei auswählen:</label>
+                    <input type="file" id="excelFile" name="file" accept=".xlsx, .xls" required
+                           class="block w-full text-sm text-gray-500
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-full file:border-0
+                                  file:text-sm file:font-semibold
+                                  file:bg-violet-50 file:text-violet-700
+                                  hover:file:bg-violet-100 dark:file:bg-gray-700 dark:file:text-violet-300 dark:hover:file:bg-gray-600">
+                </div>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg
+                                              focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50
+                                              transition duration-200 ease-in-out transform hover:scale-105">
+                    <i class="fi fi-rr-file-upload mr-2"></i> Excel hochladen
+                </button>
+                <a href="{{ url_for('general.download_beispiel_benutzer_excel') }}"
+                   class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg ml-4
+                          focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                          transition duration-200 ease-in-out transform hover:scale-105">
+                    <i class="fi fi-rr-file-download mr-2"></i> Beispiel-Excel herunterladen
+                </a>
+            </form>
+        </div>
+
+
+        <h2 class="text-xl font-semibold mb-4">Vorhandene Benutzer</h2>
+        <div class="overflow-x-auto content-section">
+            <table class="min-w-full rounded-lg shadow-md">
+                <thead>
+                    <tr class="uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Benutzername</th>
+                        <th class="py-3 px-6 text-left">Anzeigename</th>
+                        <th class="py-3 px-6 text-left">Rollen</th>
+                        <th class="py-3 px-6 text-center">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody" class="text-sm font-light">
+                    <!-- Benutzer werden hier dynamisch geladen -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content main-content-area">
+            <span class="close-button">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Benutzer bearbeiten</h2>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="mb-4">
+                    <label for="editUsername" class="block text-sm font-medium form-label">Benutzername:</label>
+                    <input type="text" id="editUsername" name="username" readonly class="form-input bg-gray-200 dark:bg-gray-700 cursor-not-allowed">
+                </div>
+                <div class="mb-4">
+                    <label for="editDisplayName" class="block text-sm font-medium form-label">Anzeigename:</label>
+                    <input type="text" id="editDisplayName" name="display_name" required class="form-input">
+                </div>
+                <div class="mb-4">
+                    <label for="editPassword" class="block text-sm font-medium form-label">Neues Passwort (optional):</label>
+                    <input type="password" id="editPassword" name="password" class="form-input">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leer lassen, um aktuelles Passwort beizubehalten.</p>
+                </div>
+                <div class="mb-6">
+                    <label for="editRoles" class="block text-sm font-medium form-label">Rollen (Mehrfachauswahl mit Strg/Cmd):</label>
+                    <select id="editRoles" name="role_ids" multiple required class="form-select-multiple">
+                        <!-- Rollen werden dynamisch geladen -->
+                    </select>
+                </div>
+                <div class="flex justify-end gap-4">
+                    <button type="button" id="cancelEditButton" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg
+                                                                        focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                                                                        transition duration-200 ease-in-out transform hover:scale-105">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                                                  transition duration-200 ease-in-out transform hover:scale-105">
+                        <i class="fi fi-rr-save mr-2"></i> Speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // Function to display inline messages
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inline-message-container');
+            let messageText = messageBox.querySelector('p');
+            if (!messageText) {
+                messageText = document.createElement('p');
+                messageBox.appendChild(messageText);
+            }
+
+            messageBox.classList.remove('success', 'error', 'info');
+            messageText.textContent = message;
+            messageBox.classList.add('show', type);
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300);
+            }, duration);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            // Das mainLogo Element wurde entfernt, da das Logo nicht mehr angezeigt wird.
+            const faviconLink = document.getElementById('faviconLink');
+
+            const createUserForm = document.getElementById('createUserForm');
+            const uploadUsersExcelForm = document.getElementById('uploadUsersExcelForm');
+            const userTableBody = document.getElementById('userTableBody');
+            const newRolesSelect = document.getElementById('newRoles');
+            const editRolesSelect = document.getElementById('editRoles');
+
+            const editUserModal = document.getElementById('editUserModal');
+            const closeButton = editUserModal.querySelector('.close-button');
+            const cancelEditButton = document.getElementById('cancelEditButton');
+            const editUserForm = document.getElementById('editUserForm');
+
+            // Function to update the Dark Mode button appearance
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>'; // Moon icon
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>'; // Pfeil-Icon wie in evaluation.html
+            }
+
+            // Set initial state of Dark Mode button
+            updateButtonAppearance();
+
+            // Dark Mode Toggle functionality
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    updateButtonAppearance(); // Update button appearance
+                    await applyAppSettings(); // Re-apply settings to update background
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            // Back button functionality
+            backButton.addEventListener('click', () => {
+                window.history.back();
+            });
+
+            // Function to fetch and apply app settings
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark');
+
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Logo für Favicon aktualisieren, da das Hauptlogo-Element entfernt wurde
+                        if (settings.logo_url) {
+                            faviconLink.href = settings.logo_url;
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}';
+                        }
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            // Initial application of app settings
+            await applyAppSettings();
+
+            // Check for messages passed via URL parameters (e.g., from a redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            const messageType = urlParams.get('type') || 'info';
+
+            if (message) {
+                displayInlineMessage(decodeURIComponent(message), messageType);
+                history.replaceState(null, '', window.location.pathname);
+            }
+
+            // Function to fetch and display roles
+            async function fetchRoles() {
+                try {
+                    const response = await fetch('/api/roles');
+                    const data = await response.json();
+                    if (data.success) {
+                        newRolesSelect.innerHTML = ''; // Clear existing options
+                        editRolesSelect.innerHTML = '';
+                        data.roles.forEach(role => {
+                            const option = document.createElement('option');
+                            option.value = role.id;
+                            option.textContent = role.name;
+                            newRolesSelect.appendChild(option);
+
+                            const editOption = document.createElement('option');
+                            editOption.value = role.id;
+                            editOption.textContent = role.name;
+                            editRolesSelect.appendChild(editOption);
+                        });
+                    } else {
+                        displayInlineMessage(data.message || 'Fehler beim Laden der Rollen.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error fetching roles:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Laden der Rollen aufgetreten.', 'error');
+                }
+            }
+
+            // Function to fetch and display users
+            async function fetchUsers() {
+                try {
+                    const response = await fetch('/api/users');
+                    const data = await response.json();
+                    if (data.success) {
+                        userTableBody.innerHTML = ''; // Clear existing users
+                        data.users.forEach(user => {
+                            // Exclude 'admin' user from the list
+                            if (user.username === 'admin') {
+                                return;
+                            }
+                            const row = document.createElement('tr');
+                            // Removed bg-gray-100 from here to allow CSS override
+                            row.className = 'border-b border-gray-200 dark:border-gray-700';
+                            row.innerHTML = `
+                                <td class="py-3 px-6 text-left whitespace-nowrap">${user.username}</td>
+                                <td class="py-3 px-6 text-left">${user.display_name}</td>
+                                <td class="py-3 px-6 text-left">${user.role_names.join(', ')}</td>
+                                <td class="py-3 px-6 text-center">
+                                    <div class="flex item-center justify-center">
+                                        <button class="edit-button w-8 h-8 mr-2 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md hover:bg-blue-600 transition duration-200" data-id="${user.id}" data-username="${user.username}" data-displayname="${user.display_name}" data-roleids="${user.role_ids.join(',')}" title="Bearbeiten">
+                                            <i class="fi fi-rr-edit"></i>
+                                        </button>
+                                        <button class="delete-button w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition duration-200" data-id="${user.id}" data-username="${user.username}" title="Löschen">
+                                            <i class="fi fi-rr-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            `;
+                            userTableBody.appendChild(row);
+                        });
+
+                        // Add event listeners to new buttons
+                        document.querySelectorAll('.edit-button').forEach(button => {
+                            button.addEventListener('click', openEditModal);
+                        });
+                        document.querySelectorAll('.delete-button').forEach(button => {
+                            button.addEventListener('click', deleteUser);
+                        });
+
+                    } else {
+                        displayInlineMessage(data.message || 'Fehler beim Laden der Benutzer.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Laden der Benutzer aufgetreten.', 'error');
+                }
+            }
+
+            // Create User Form submission
+            createUserForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(createUserForm);
+                const roleIds = Array.from(newRolesSelect.selectedOptions).map(option => parseInt(option.value));
+                const data = {
+                    username: formData.get('username'),
+                    password: formData.get('password'),
+                    display_name: formData.get('display_name'),
+                    role_ids: roleIds
+                };
+
+                try {
+                    const response = await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        createUserForm.reset(); // Clear form
+                        await fetchUsers(); // Refresh user list
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error creating user:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Anlegen des Benutzers aufgetreten.', 'error');
+                }
+            });
+
+            // Upload Users Excel Form submission
+            uploadUsersExcelForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fileInput = document.getElementById('excelFile');
+                if (fileInput.files.length === 0) {
+                    displayInlineMessage('Bitte wählen Sie eine Datei aus.', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                try {
+                    const response = await fetch('/upload_users_excel', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        uploadUsersExcelForm.reset();
+                        await fetchUsers(); // Refresh user list
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error uploading Excel file:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Hochladen der Excel-Datei aufgetreten.', 'error');
+                }
+            });
+
+            // Open Edit Modal
+            function openEditModal(event) {
+                const button = event.currentTarget;
+                const userId = button.dataset.id;
+                const username = button.dataset.username;
+                const displayName = button.dataset.displayname;
+                const roleIds = button.dataset.roleids ? button.dataset.roleids.split(',').map(id => parseInt(id)) : [];
+
+                document.getElementById('editUserId').value = userId;
+                document.getElementById('editUsername').value = username;
+                document.getElementById('editDisplayName').value = displayName;
+                document.getElementById('editPassword').value = ''; // Clear password field
+
+                // Set selected roles in the edit modal
+                Array.from(editRolesSelect.options).forEach(option => {
+                    option.selected = roleIds.includes(parseInt(option.value));
+                });
+
+                editUserModal.style.display = 'flex'; // Show modal
+            }
+
+            // Close Edit Modal
+            closeButton.addEventListener('click', () => {
+                editUserModal.style.display = 'none';
+            });
+            cancelEditButton.addEventListener('click', () => {
+                editUserModal.style.display = 'none';
+            });
+            window.addEventListener('click', (event) => {
+                if (event.target == editUserModal) {
+                    editUserModal.style.display = 'none';
+                }
+            });
+
+            // Edit User Form submission
+            editUserForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userId = document.getElementById('editUserId').value;
+                const formData = new FormData(editUserForm);
+                const roleIds = Array.from(editRolesSelect.selectedOptions).map(option => parseInt(option.value));
+                const data = {
+                    id: parseInt(userId),
+                    display_name: formData.get('display_name'),
+                    password: formData.get('password') || null, // Send null if password is empty
+                    role_ids: roleIds
+                };
+
+                try {
+                    const response = await fetch('/api/users', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        editUserModal.style.display = 'none'; // Close modal
+                        await fetchUsers(); // Refresh user list
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error updating user:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Aktualisieren des Benutzers aufgetreten.', 'error');
+                }
+            });
+
+            // Delete User
+            async function deleteUser(event) {
+                const button = event.currentTarget;
+                const userId = button.dataset.id;
+                const username = button.dataset.username;
+
+                if (username === 'admin') {
+                    displayInlineMessage('Der "admin"-Benutzer kann nicht gelöscht werden.', 'error');
+                    return;
+                }
+
+                // Custom confirmation message box instead of alert/confirm
+                const confirmation = await showConfirmation(`Möchten Sie den Benutzer "${username}" wirklich löschen?`);
+                if (!confirmation) {
+                    return; // User cancelled
+                }
+
+                try {
+                    const response = await fetch(`/api/users?id=${userId}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        await fetchUsers(); // Refresh user list
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Löschen des Benutzers aufgetreten.', 'error');
+                }
+            }
+
+            // Custom Confirmation Modal (replaces alert/confirm)
+            function showConfirmation(message) {
+                return new Promise((resolve) => {
+                    const confirmModal = document.createElement('div');
+                    confirmModal.className = 'modal';
+                    confirmModal.innerHTML = `
+                        <div class="modal-content main-content-area p-6 rounded-lg shadow-md">
+                            <p class="mb-4 text-gray-800 dark:text-gray-200">${message}</p>
+                            <div class="flex justify-end gap-4">
+                                <button id="confirmCancel" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg
+                                                                  focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                                                                  transition duration-200 ease-in-out transform hover:scale-105">
+                                    Abbrechen
+                                </button>
+                                <button id="confirmOk" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg
+                                                              focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50
+                                                              transition duration-200 ease-in-out transform hover:scale-105">
+                                    Löschen
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(confirmModal);
+
+                    document.getElementById('confirmOk').addEventListener('click', () => {
+                        confirmModal.remove();
+                        resolve(true);
+                    });
+                    document.getElementById('confirmCancel').addEventListener('click', () => {
+                        confirmModal.remove();
+                        resolve(false);
+                    });
+                    confirmModal.style.display = 'flex';
+                });
+            }
+
+            // Initial fetches
+            await fetchRoles();
+            await fetchUsers();
+
+            // Service Worker Registration (copied from home.html)
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bewertungsbogen</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Flagsome (Flaticon Uicons) CSS für Icons #}
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.2.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hintergrund wird jetzt dynamisch über JavaScript gesetzt */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Sanfter Übergang für den Hintergrund und Textfarbe */
+        }
+        /* Dark Mode Stile für den Body */
+        body.dark {
+            color: #e2e8f0; /* Hellerer Text für Dark Mode */
+        }
+        /* Dark Mode für Hauptcontainer und Karten */
+        .dark .bg-white {
+            background-color: #000000; /* Komplett schwarz für OLED-Optimierung, passend zum Login */
+        }
+        .dark .text-gray-800 {
+            color: #e2e8f0; /* Hellerer Text für Überschriften im Dark Mode */
+        }
+        .dark .text-gray-600 {
+            color: #a0aec0; /* Hellerer Text für Beschreibungen im Dark Mode */
+        }
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25); /* Dunklerer Schatten */
+        }
+        /* Stil für den Stand-Beschreibungsbanner */
+        .stand-description-banner, .criterion-description-banner {
+            background-color: #fff3e0; /* Sehr helles Orange/Gelb */
+            color: #e65100; /* Dunkleres Orange */
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 8px; /* Abstand zum Dropdown / Input */
+            font-size: 0.95rem;
+            line-height: 1.4;
+            border: 1px solid #ffcc80; /* Passender Rand */
+        }
+        /* Dark Mode für Banner */
+        .dark .stand-description-banner, .dark .criterion-description-banner {
+            background-color: #1c1c1c; /* Dunklerer Hintergrund für Banner, passend zu Inputfeldern */
+            color: #fbd38d; /* Hellerer Text für Banner */
+            border-color: #555555; /* Dunklerer Rand */
+        }
+        /* Das alte info-popover ist nicht mehr direkt in Verwendung für Kriterienbeschreibungen,
+           aber die Klasse bleibt, falls sie noch an anderer Stelle genutzt wird.
+           Wir entfernen hier die spezifische Positionierung, da die Beschreibungen
+           jetzt als Blöcke angezeigt werden. */
+        .info-popover {
+            /* Diese Stile werden für die Kriterienbeschreibungen nicht mehr benötigt,
+               da sie jetzt als separate, sichtbare Blöcke fungieren. */
+            position: static; /* Oder entfernen Sie diese Klasse ganz, wenn sie nur hier verwendet wurde */
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            white-space: normal;
+            max-width: none;
+            width: auto;
+            left: auto;
+            transform: none;
+            z-index: auto;
+            opacity: 1;
+            visibility: visible;
+            transition: none;
+            box-sizing: border-box;
+        }
+        /* Dark Mode für spezifische Elemente */
+        .dark .text-gray-700 {
+            color: #ffffff; /* Hellerer Text für Labels und Input-Text */
+        }
+        .dark .border {
+            border-color: #4a5568;
+        }
+        .dark .bg-amber-100 {
+            background-color: #1c1c1c; /* Angepasst an Inputfelder */
+            color: #fbd38d; /* Textfarbe für Warnbanner */
+            border-color: #555555; /* Randfarbe für Warnbanner */
+        }
+        .dark .border-amber-400 {
+            border-color: #f6ad55;
+        }
+        .dark .text-amber-700 {
+            color: #fbd38d;
+        }
+        .dark .bg-green-100 {
+            background-color: #2f855a; /* Dunkleres Grün für Erfolgsmeldungen */
+            color: #e2e8f0;
+            border-color: #276749;
+        }
+        .dark .bg-rose-100 {
+            background-color: #c53030; /* Dunkleres Rot für Fehlermeldungen */
+            color: #fed7d7;
+            border-color: #a02525;
+        }
+        .dark .bg-blue-100 {
+            background-color: #2b6cb0; /* Dunkleres Blau für Infomeldungen */
+            color: #e2e8f0;
+            border-color: #255c96;
+        }
+        .dark .focus\:ring-orange-400:focus {
+            --tw-ring-color: #fbd38d;
+        }
+        .dark .bg-orange-500 {
+            background-color: #c05621; /* Dunkleres Orange für Buttons */
+        }
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #9c4221; /* Noch dunkleres Orange für Button-Hover */
+        }
+        .dark .text-blue-600 {
+            color: #63b3ed;
+        }
+        .dark .hover\:text-blue-800:hover {
+            color: #4299e1;
+        }
+
+        /* Dark Mode für Eingabefelder und deren Text */
+        .dark input[type="number"],
+        .dark select { /* Auch für das Select-Feld */
+            background-color: #1c1c1c; /* Sehr dunkler Hintergrund für Eingabefelder */
+            color: #ffffff; /* Weißer Text im Eingabefeld */
+            border-color: #555555; /* Angepasster Rand */
+        }
+
+        /* Dark Mode für Platzhaltertext in Eingabefeldern */
+        .dark input[type="number"]::placeholder {
+            color: #aaaaaa; /* Hellerer Platzhaltertext */
+        }
+
+        /* Zusätzliche Stile für Icons in Buttons */
+        .fi {
+            vertical-align: middle; /* Vertikale Ausrichtung */
+            color: currentColor; /* Sicherstellen, dass die Farbe vom Elternelement geerbt wird */
+            /* Explizite Font-Family, um sicherzustellen, dass die Icon-Schriftart verwendet wird */
+            font-family: 'uicons-regular-rounded', 'uicons-solid-rounded', sans-serif !important;
+            font-style: normal; /* Sicherstellen, dass der Stil nicht kursiv ist */
+            font-weight: normal; /* Sicherstellen, dass der Stil nicht fett ist */
+        }
+        /* Spezifische Größe für Flagsome Icons, um sie konsistent zu halten */
+        .fi::before {
+            font-size: 24px; /* Standardgröße für Icons */
+        }
+        /* Sicherstellen, dass das Icon im Dark Mode Toggle sichtbar ist */
+        #darkModeToggle .fi::before, #backButton .fi::before {
+            color: inherit; /* Vererbt die Farbe vom Button */
+        }
+
+        /* Spezifische Stile für den Dark Mode Toggle und Zurück Button */
+        #darkModeToggle, #backButton {
+            background-color: #000000 !important; /* Erzwingt schwarzen Hintergrund */
+            color: #ffffff !important; /* Erzwingt weißes Icon */
+            width: 48px; /* Feste Breite */
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* rounded-lg wird jetzt direkt im HTML angewendet */
+        }
+
+        body.dark #darkModeToggle, body.dark #backButton {
+            background-color: #ffffff !important; /* Erzwingt weißen Hintergrund */
+            color: #000000 !important; /* Erzwingt schwarzes Icon */
+        }
+
+        /* Inline Message Styling (Copied from index.html) */
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem; /* text-sm */
+            border-width: 1px;
+            display: none; /* Hidden by default */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .message-box.success {
+            background-color: #d4edda; /* bg-green-100 */
+            color: #155724; /* text-green-800 */
+            border-color: #c3e6cb; /* border-green-400 */
+        }
+
+        .message-box.error {
+            background-color: #f8d7da; /* bg-red-100 */
+            color: #721c24; /* text-red-800 */
+            border-color: #f5c6cb; /* border-red-400 */
+        }
+
+        .dark .message-box.success {
+            background-color: #0f5132; /* Darker green for dark mode */
+            color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .dark .message-box.error {
+            background-color: #721c24; /* Darker red for dark mode */
+            color: #f8d7da;
+            border-color: #dc3545;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen {{ 'dark' if dark_mode_enabled else '' }}">
+    {# Hauptcontainer für den Bewertungsbogen mit angepasstem Padding oben #}
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl relative pt-20">
+        {# Zurück Button (oben links) #}
+        <div class="absolute top-0 left-0">
+            <button id="backButton" class="w-12 h-12 transition duration-300 rounded-lg"> {# rounded-lg für alle Ecken #}
+                <i class="fi fi-rr-angle-left"></i>
+            </button>
+        </div>
+
+        {# Dark Mode Toggle (oben rechts) #}
+        <div class="absolute top-0 right-0">
+            <button id="darkModeToggle" class="w-12 h-12 transition duration-300 rounded-lg"> {# rounded-lg für alle Ecken #}
+                <i class="fi fi-rr-eclipse-alt"></i>
+            </button>
+        </div>
+
+        {# Titel des Bewertungsbogens #}
+        <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Bewertungsbogen</h2>
+        
+        {# Inline Message Container #}
+        <div id="inlineMessage" class="message-box" role="alert">
+            <p id="inlineMessageText"></p>
+        </div>
+
+        {# Angepasste Farben für bestehende Bewertung - jetzt vereinfacht #}
+        <div id="existing-evaluation-banner" class="hidden bg-amber-100 border border-amber-400 text-amber-700 px-4 py-3 rounded-md mb-6">
+            <p class="font-bold mb-2">Du hast diesen Stand bereits bewertet. Du kannst deine Bewertung hier anpassen.</p>
+            <p class="text-sm">Bewertet am: <span id="existing-timestamp" class="font-semibold"></span></p>
+        </div>
+
+        <form id="evaluationForm" class="space-y-6"> {# Added ID to form and removed action/method #}
+            <div>
+                <label for="stand_id" class="block text-gray-700 text-sm font-semibold mb-2">Stand auswählen:</label>
+                <div class="relative"> {# Container für select #}
+                    <select id="stand_id" name="stand_id" required
+                            class="shadow-sm border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out">
+                        <option value="">Bitte Stand auswählen</option> {# Option für initial leere Auswahl #}
+                        {# Stands are now dynamically loaded by JavaScript #}
+                    </select>
+                </div>
+                {# Neuer Div für die Standbeschreibung (Banner) #}
+                <div id="stand-description-banner" class="hidden stand-description-banner"></div>
+            </div>
+
+            <div id="criteriaContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {# Dynamische Generierung der Bewertungskriterien durch JavaScript #}
+            </div>
+
+            <button type="submit"
+                    class="w-full flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                <span class="mr-2"><i class="fi fi-rr-paper-plane"></i></span> {# Hinzugefügtes Icon #}
+                Bewertung abschicken
+            </button>
+        </form>
+        <div class="mt-6 text-center">
+            {# Der alte "Zurück zur Hauptseite" Link wurde entfernt, da der neue Button dies übernimmt #}
+        </div>
+    </div>
+
+    <script>
+        // Function to display inline messages (Copied from index.html/home.html)
+        function displayInlineMessage(message, type = 'info', duration = 5000) {
+            const messageBox = document.getElementById('inlineMessage');
+            const messageText = document.getElementById('inlineMessageText');
+
+            messageText.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else {
+                // Default info style if needed, or just rely on base message-box style
+            }
+
+            // Hide the message after 'duration' milliseconds
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                // Optional: Clear text after transition for accessibility/cleanliness
+                setTimeout(() => {
+                    messageText.textContent = '';
+                }, 300); // Should match CSS transition duration
+            }, duration);
+        }
+
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const standSelect = document.getElementById('stand_id');
+            const existingEvaluationBanner = document.getElementById('existing-evaluation-banner');
+            const standDescriptionBanner = document.getElementById('stand-description-banner');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const backButton = document.getElementById('backButton');
+            const body = document.body;
+            const evaluationForm = document.getElementById('evaluationForm');
+            const criteriaContainer = document.getElementById('criteriaContainer');
+            const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
+
+            let allStands = [];
+            let allCriteria = [];
+            let criteriaDescriptions = {};
+            let initialSelectedStandId = null; // To store the initial selected stand from Flask
+
+
+            // Function to update the Dark Mode button appearance
+            function updateButtonAppearance() {
+                darkModeToggle.innerHTML = '<i class="fi fi-rr-eclipse-alt"></i>';
+                backButton.innerHTML = '<i class="fi fi-rr-angle-left"></i>';
+            }
+
+            // Initialen Zustand der Buttons setzen
+            updateButtonAppearance();
+
+            darkModeToggle.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ url_for("general.toggle_dark_mode") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.dark_mode_enabled) {
+                        body.classList.add('dark');
+                    } else {
+                        body.classList.remove('dark');
+                    }
+                    updateButtonAppearance(); // Update button appearance
+                    await applyAppSettings(); // Re-apply settings to update background and logo
+                } catch (error) {
+                    console.error('Error toggling dark mode:', error);
+                    displayInlineMessage('Fehler beim Umschalten des Dark Mode.', 'error');
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("general.home") }}';
+            });
+
+            let currentOpenCriterionDescription = null;
+
+            function hideAllCriterionDescriptions() {
+                document.querySelectorAll('.criterion-description-banner:not(.hidden)').forEach(banner => {
+                    banner.classList.add('hidden');
+                });
+                currentOpenCriterionDescription = null;
+            }
+
+            function clearFormAndHideBanner() {
+                existingEvaluationBanner.classList.add('hidden');
+                
+                // Clear all score inputs
+                allCriteria.forEach(criterion => {
+                    const input = document.getElementById(`score_input_${criterion.id}`);
+                    if (input) {
+                        input.value = '';
+                    }
+                });
+
+                standDescriptionBanner.classList.add('hidden');
+                standDescriptionBanner.innerHTML = ''; // Changed to innerHTML
+                hideAllCriterionDescriptions();
+            }
+
+            // Function to fetch and apply app settings
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (result.success) {
+                        const settings = result.settings;
+                        
+                        const isDarkModeCurrent = body.classList.contains('dark'); // Get current dark mode state from body class
+
+                        // Apply background gradient based on current mode
+                        if (isDarkModeCurrent && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                        } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                            body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                        } else {
+                            // Fallback to default if settings are missing
+                            body.style.background = `linear-gradient(to bottom right, #ffb3c1, #a7d9f7)`;
+                        }
+
+                        // Apply logo to favicon
+                        if (settings.logo_url) { // Use logo_url provided by the API
+                            faviconLink.href = settings.logo_url; // Update favicon
+                        } else {
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback
+                        }
+
+                    } else {
+                        console.error('Fehler beim Laden der App-Einstellungen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der App-Einstellungen:', error);
+                }
+            }
+
+            async function fetchInitialData() {
+                try {
+                    // Changed to call the new dedicated API endpoint for evaluations
+                    const apiResponse = await fetch('{{ url_for("evaluations.api_evaluate_initial_data") }}'); 
+                    const apiData = await apiResponse.json();
+
+                    if (apiData.success) {
+                        allStands = apiData.stands;
+                        allCriteria = apiData.criteria;
+
+                        // Populate stand dropdown
+                        standSelect.innerHTML = '<option value="">Bitte Stand auswählen</option>';
+                        allStands.forEach(stand => {
+                            const option = document.createElement('option');
+                            option.value = stand.id;
+                            option.textContent = stand.name;
+                            if (stand.room_name) {
+                                option.textContent += ` (${stand.room_name})`;
+                            }
+                            standSelect.appendChild(option);
+                        });
+
+                        // Store criteria descriptions and render criteria inputs
+                        criteriaContainer.innerHTML = ''; // Clear existing criteria
+                        allCriteria.forEach(criterion => {
+                            criteriaDescriptions[criterion.id] = criterion.description;
+                            const criterionDiv = document.createElement('div');
+                            criterionDiv.innerHTML = `
+                                <div class="flex items-center mb-2">
+                                    <label for="score_input_${criterion.id}" class="block text-gray-700 text-sm font-semibold mr-1">
+                                        ${criterion.name} (1-${criterion.max_score}):
+                                    </label>
+                                    <svg class="h-4 w-4 text-gray-500 cursor-pointer info-icon" data-criterion-id="${criterion.id}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <input type="number" id="score_input_${criterion.id}" name="score_${criterion.id}" min="1" max="${criterion.max_score}" required
+                                   class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition duration-200 ease-in-out">
+                                <div id="criterion-description-${criterion.id}" class="hidden criterion-description-banner mt-2"></div>
+                            `;
+                            criteriaContainer.appendChild(criterionDiv);
+                        });
+
+                        // Re-attach event listeners for info icons after rendering
+                        attachCriterionInfoListeners();
+
+                        // Handle initial selected stand and existing scores if passed from Flask
+                        const urlParams = new URLSearchParams(window.location.search);
+                        initialSelectedStandId = urlParams.get('stand_id');
+                        if (initialSelectedStandId) {
+                            standSelect.value = initialSelectedStandId;
+                            fetchEvaluationForStand(initialSelectedStandId);
+                            fetchStandDescription(initialSelectedStandId);
+                        }
+
+                    } else {
+                        displayInlineMessage(apiData.message || 'Fehler beim Laden der Initialdaten für Bewertungen.', 'error');
+                    }
+
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Initialdaten:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Laden der Bewertungsdaten aufgetreten.', 'error');
+                }
+            }
+
+            // Call to fetch initial data
+            fetchInitialData();
+            await applyAppSettings(); // Initial application of app settings
+
+
+            async function fetchEvaluationForStand(standId) {
+                if (!standId) {
+                    clearFormAndHideBanner();
+                    return;
+                }
+
+                try {
+                    // Construct the URL directly for the API endpoint
+                    const url = `/api/evaluations/user_scores/${standId}`; // Changed to new API endpoint
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.success && data.exists) {
+                        document.getElementById('existing-timestamp').textContent = data.timestamp; // Use formatted timestamp directly
+                        existingEvaluationBanner.classList.remove('hidden');
+
+                        allCriteria.forEach(criterion => {
+                            const input = document.getElementById(`score_input_${criterion.id}`);
+                            if (input) {
+                                input.value = data.scores[criterion.id] || '';
+                            }
+                        });
+
+                        displayInlineMessage('Du hast diesen Stand bereits bewertet. Du kannst deine Bewertung hier anpassen.', 'info');
+
+                    } else {
+                        existingEvaluationBanner.classList.add('hidden');
+                        // Clear current scores if no existing evaluation
+                        allCriteria.forEach(criterion => {
+                            const input = document.getElementById(`score_input_${criterion.id}`);
+                            if (input) {
+                                input.value = '';
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Bewertung:', error);
+                    displayInlineMessage('Ein Fehler ist beim Laden der Bewertung aufgetreten.', 'error');
+                    existingEvaluationBanner.classList.add('hidden');
+                }
+            }
+
+            async function fetchStandDescription(standId) {
+                if (!standId) {
+                    standDescriptionBanner.classList.add('hidden');
+                    standDescriptionBanner.innerHTML = ''; // Changed to innerHTML
+                    return;
+                }
+                try {
+                    // Construct the URL directly for the API endpoint
+                    const response = await fetch(`/api/stands/${standId}`); // Changed to use existing api_stands endpoint
+                    const data = await response.json();
+                    if (data.success && data.stand && data.stand.description && data.stand.description !== 'No description available.') {
+                        standDescriptionBanner.innerHTML = data.stand.description; // Extract description from 'stand' object
+                        standDescriptionBanner.classList.remove('hidden');
+                    } else {
+                        standDescriptionBanner.classList.add('hidden');
+                        standDescriptionBanner.innerHTML = ''; // Changed to innerHTML
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen der Standbeschreibung:', error);
+                    standDescriptionBanner.classList.add('hidden');
+                    standDescriptionBanner.innerHTML = ''; // Changed to innerHTML
+                }
+            }
+
+            standSelect.addEventListener('change', function() {
+                const selectedStandId = this.value;
+                fetchEvaluationForStand(selectedStandId);
+                fetchStandDescription(selectedStandId);
+            });
+
+            // Handle form submission
+            evaluationForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const selectedStandId = standSelect.value;
+                if (!selectedStandId) {
+                    displayInlineMessage('Bitte wähle einen Stand aus, bevor du die Bewertung abschickst.', 'error');
+                    return;
+                }
+
+                const scores = {};
+                let allScoresValid = true;
+                allCriteria.forEach(criterion => {
+                    const input = document.getElementById(`score_input_${criterion.id}`);
+                    if (input) {
+                        const scoreValue = parseInt(input.value);
+                        if (isNaN(scoreValue) || scoreValue < 1 || scoreValue > criterion.max_score) {
+                            // Only add to scores if valid, otherwise it will be deleted on backend
+                            // displayInlineMessage(`Bitte gib eine gültige Punktzahl für ${criterion.name} ein (1-${criterion.max_score}).`, 'error');
+                            // allScoresValid = false; // Keep this check if you want to prevent submission on any invalid score
+                        } else {
+                            scores[criterion.id] = scoreValue;
+                        }
+                    }
+                });
+
+                // If you want to prevent submission if any score is invalid uncomment the above and below line
+                // if (!allScoresValid) return; 
+
+                try {
+                    const response = await fetch('{{ url_for("evaluations.evaluate_page") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            stand_id: selectedStandId,
+                            scores: scores
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        displayInlineMessage(data.message, 'success');
+                        // Re-fetch evaluation to update timestamp and ensure consistency
+                        fetchEvaluationForStand(selectedStandId); 
+                    } else {
+                        displayInlineMessage(data.message || 'Ein Fehler ist beim Speichern der Bewertung aufgetreten.', 'error');
+                    }
+
+                } catch (error) {
+                    console.error('Fehler beim Abschicken der Bewertung:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später erneut.', 'error');
+                }
+            });
+
+            // Logic for criterion descriptions
+            function attachCriterionInfoListeners() {
+                const criterionInfoIcons = document.querySelectorAll('.info-icon');
+                criterionInfoIcons.forEach(icon => {
+                    icon.addEventListener('click', (event) => {
+                        const criterionId = event.currentTarget.dataset.criterionId;
+                        const descriptionBanner = document.getElementById(`criterion-description-${criterionId}`);
+
+                        if (descriptionBanner.classList.contains('hidden')) {
+                            hideAllCriterionDescriptions();
+                            descriptionBanner.innerHTML = criteriaDescriptions[criterionId] || 'Keine Beschreibung verfügbar.'; // Changed to innerHTML
+                            descriptionBanner.classList.remove('hidden');
+                            currentOpenCriterionDescription = descriptionBanner;
+                        } else {
+                            descriptionBanner.classList.add('hidden');
+                            currentOpenCriterionDescription = null;
+                        }
+                        event.stopPropagation();
+                    });
+                });
+            }
+
+            document.addEventListener('click', (event) => {
+                if (currentOpenCriterionDescription && 
+                    !currentOpenCriterionDescription.contains(event.target) && 
+                    !event.target.closest('.info-icon')) {
+                    hideAllCriterionDescriptions();
+                }
+            });
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker registriert mit Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Registrierung fehlgeschlagen:', error);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
