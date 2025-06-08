@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, session, current_app, render_temp
 from db import get_db
 from decorators import role_required
 import datetime
+from datetime import timezone # Importiere timezone
 
 evaluations_bp = Blueprint('evaluations', __name__)
 
@@ -168,6 +169,14 @@ def api_my_evaluations():
         ''', (eval_dict['evaluation_id'],)).fetchone()
         
         eval_dict['total_achieved_score'] = total_score_row['total_score'] if total_score_row and total_score_row['total_score'] is not None else 0
+        # Format timestamp to ISO 8601 for consistent parsing in frontend
+        if eval_dict['timestamp']:
+            # Assume timestamp from DB is UTC and make it timezone-aware
+            dt_object = datetime.datetime.fromisoformat(eval_dict['timestamp'])
+            # If the database stores naive datetimes, and we know it's UTC, attach UTC timezone info
+            if dt_object.tzinfo is None:
+                dt_object = dt_object.replace(tzinfo=timezone.utc)
+            eval_dict['timestamp'] = dt_object.isoformat()
         eval_with_scores.append(eval_dict)
 
     return jsonify({'success': True, 'evaluations': eval_with_scores})
@@ -199,11 +208,20 @@ def api_user_evaluation_scores(stand_id):
             for row in score_rows:
                 scores[row['criterion_id']] = row['score']
             
-            # Zeitstempel für die Anzeige formatieren
-            formatted_timestamp = datetime.datetime.fromisoformat(timestamp).strftime('%d.%m.%Y %H:%M')
+            # Zeitstempel im ISO-Format zurückgeben
+            # fromisoformat wandelt den String in ein datetime-Objekt um
+            # .isoformat() wandelt es in einen ISO 8601-String um, der von JS Date() gut verarbeitet wird
+            iso_timestamp = None
+            if timestamp:
+                dt_object = datetime.datetime.fromisoformat(timestamp)
+                # Wenn die Datenbank naive Datetimes speichert und wir wissen, dass es UTC ist,
+                # fügen wir die Zeitzoneninformation hinzu.
+                if dt_object.tzinfo is None:
+                    dt_object = dt_object.replace(tzinfo=timezone.utc)
+                iso_timestamp = dt_object.isoformat()
 
-            print(f"DEBUG (Flask): Found existing evaluation {evaluation_id} for stand {stand_id}, scores: {scores}, timestamp: {formatted_timestamp}")
-            return jsonify({'success': True, 'exists': True, 'scores': scores, 'timestamp': formatted_timestamp})
+            print(f"DEBUG (Flask): Found existing evaluation {evaluation_id} for stand {stand_id}, scores: {scores}, timestamp: {iso_timestamp}")
+            return jsonify({'success': True, 'exists': True, 'scores': scores, 'timestamp': iso_timestamp})
         else:
             print(f"DEBUG (Flask): No existing evaluation found for stand {stand_id} and user {user_id}.")
             return jsonify({'success': True, 'exists': False, 'scores': {}})
@@ -345,10 +363,22 @@ def api_evaluation_details(evaluation_id):
         all_criteria_max_scores = cursor.execute("SELECT SUM(max_score) FROM criteria").fetchone()[0]
         total_max_possible_score = all_criteria_max_scores if all_criteria_max_scores is not None else 0
 
+        # Format timestamp to ISO 8601 for consistent parsing in frontend
+        evaluation_dict = dict(evaluation) # ensure it's a dict
+        if evaluation_dict['timestamp']:
+            dt_object = datetime.datetime.fromisoformat(evaluation_dict['timestamp'])
+            # If the database stores naive datetimes, and we know it's UTC, attach UTC timezone info
+            if dt_object.tzinfo is None:
+                dt_object = dt_object.replace(tzinfo=timezone.utc)
+            evaluation_dict['timestamp'] = dt_object.isoformat()
+        else:
+            evaluation_dict['timestamp'] = None
+
+
         return jsonify({
             'success': True,
             'data': {
-                'evaluation': dict(evaluation),
+                'evaluation': evaluation_dict,
                 'criteria_with_scores': [dict(c) for c in criteria_with_scores],
                 'total_achieved_score': total_achieved_score,
                 'total_max_possible_score': total_max_possible_score
@@ -360,4 +390,3 @@ def api_evaluation_details(evaluation_id):
     except Exception as e:
         print(f"An unexpected error occurred in api_evaluation_details: {e}")
         return jsonify({'success': False, 'message': f'Ein unerwarteter Fehler ist aufgetreten: {e}'}), 500
-

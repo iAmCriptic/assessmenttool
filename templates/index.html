@@ -260,6 +260,112 @@
         .dark .footer-info {
             color: #9ca3af; /* Hellerer Grauton im Dark Mode */
         }
+
+        /* Styles for the Android App Popup */
+        .app-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .app-popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .app-popup-content {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 90%;
+            width: 320px;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .app-popup-overlay.show .app-popup-content {
+            transform: translateY(0);
+        }
+
+        .dark .app-popup-content {
+            background-color: #1c1c1c;
+            color: #e2e7eb;
+        }
+
+        .app-popup-content h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+
+        .dark .app-popup-content h2 {
+            color: #e2e7eb;
+        }
+
+        .app-popup-content p {
+            margin-bottom: 1.5rem;
+            color: #4b5563;
+        }
+
+        .dark .app-popup-content p {
+            color: #a0aec0;
+        }
+
+        .app-popup-content button {
+            background-color: #f97316;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .app-popup-content button:hover {
+            background-color: #ea580c;
+        }
+
+        .dark .app-popup-content button {
+            background-color: #c05621;
+        }
+
+        .dark .app-popup-content button:hover {
+            background-color: #9c4221;
+        }
+
+        .app-popup-content .close-button {
+            background-color: transparent;
+            color: #6b7280;
+            border: none;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .dark .app-popup-content .close-button {
+            color: #9ca3af;
+        }
+
+        .app-popup-content .close-button:hover {
+            color: #374151;
+        }
+
+        .dark .app-popup-content .close-button:hover {
+            color: #ffffff;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
@@ -316,6 +422,16 @@
         <p>Backend Version 1.7.0014</p>
     </div>
 
+    {# Android App Popup #}
+    <div id="androidAppPopup" class="app-popup-overlay">
+        <div class="app-popup-content">
+            <h2>Unsere App ist da!</h2>
+            <p>Für ein besseres Erlebnis lade unsere App herunter.</p>
+            <button id="openAppButton">Jetzt zur App</button>
+            <button id="closeAppPopupButton" class="close-button">Nein, danke</button>
+        </div>
+    </div>
+
     <script>
         // Funktion zur Anzeige von Inline-Nachrichten
         function displayInlineMessage(message, type = 'info', duration = 5000) {
@@ -349,6 +465,10 @@
             const dynamicLoginTitle = document.getElementById('dynamicLoginTitle'); // Referenz zum dynamischen Titel
             const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
             const loginLogo = document.getElementById('loginLogo'); // Referenz zum Login-Logo hinzugefügt
+
+            const androidAppPopup = document.getElementById('androidAppPopup');
+            const openAppButton = document.getElementById('openAppButton');
+            const closeAppPopupButton = document.getElementById('closeAppPopupButton');
 
             // Funktion zum Abrufen und Anwenden der App-Einstellungen
             async function applyAppSettings() {
@@ -551,6 +671,42 @@
                         });
                 });
             }
+
+            // --- Android App Popup Logic ---
+            const isAndroid = () => {
+                const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                return /android/i.test(userAgent);
+            };
+
+            const showPopup = () => {
+                androidAppPopup.classList.add('show');
+            };
+
+            const hidePopup = () => {
+                androidAppPopup.classList.remove('show');
+            };
+
+            if (isAndroid()) {
+                // Check if the user has already seen and dismissed the popup
+                const hasDismissedPopup = localStorage.getItem('appPopupDismissed');
+                if (!hasDismissedPopup) {
+                    // Display the popup after a short delay
+                    setTimeout(showPopup, 1000); 
+                }
+            }
+
+            openAppButton.addEventListener('click', () => {
+                // Replace with your actual Android app URL or deep link
+                window.location.href = 'https://github.com/iAmCriptic/assessmenttool_app/releases'; 
+                hidePopup();
+                localStorage.setItem('appPopupDismissed', 'true'); // Dismiss permanently
+            });
+
+            closeAppPopupButton.addEventListener('click', () => {
+                hidePopup();
+                localStorage.setItem('appPopupDismissed', 'true'); // Dismiss permanently
+            });
+            // --- End Android App Popup Logic ---
         });
     </script>
 </body>

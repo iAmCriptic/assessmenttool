@@ -1,8 +1,9 @@
 import sqlite3
-from flask import Blueprint, request, jsonify, session, current_app, render_template # render_template hinzugefügt
+from flask import Blueprint, request, jsonify, session, current_app, render_template
 from db import get_db
 from decorators import role_required
 import datetime
+from datetime import timezone # Importiere timezone
 
 inspections_bp = Blueprint('inspections', __name__)
 
@@ -42,6 +43,14 @@ def api_room_inspections():
         rooms_data = []
         for room_row in rooms_raw_data:
             room_dict = dict(room_row)
+            
+            # Konvertiere den Zeitstempel in ISO 8601 UTC
+            if room_dict['inspection_timestamp']:
+                dt_object = datetime.datetime.fromisoformat(room_dict['inspection_timestamp'])
+                if dt_object.tzinfo is None:
+                    dt_object = dt_object.replace(tzinfo=timezone.utc)
+                room_dict['inspection_timestamp'] = dt_object.isoformat()
+            
             stands_for_room = cursor.execute("SELECT id, name FROM stands WHERE room_id = ?", (room_dict['room_id'],)).fetchall()
             room_dict['stands'] = [dict(s) for s in stands_for_room]
             rooms_data.append(room_dict)
@@ -53,7 +62,10 @@ def api_room_inspections():
         is_clean = data.get('is_clean')
         comment = data.get('comment')
         inspector_user_id = session['user_id']
-        inspection_timestamp = datetime.datetime.now().isoformat()
+        
+        # Erzeuge den Zeitstempel als UTC und konvertiere ihn in einen ISO-String
+        # CURRENT_TIMESTAMP in SQLite speichert in UTC, also ist fromisoformat() und replace(tzinfo=timezone.utc) hier korrekt.
+        inspection_timestamp = datetime.datetime.now(timezone.utc).isoformat()
 
         if room_id is None or is_clean is None:
             return jsonify({'success': False, 'message': "Raum-ID und Sauberkeitsstatus sind erforderlich."}), 400

@@ -339,17 +339,7 @@
         function formatDatetime(value) {
             if (value) {
                 try {
-                    // Annahme: Backend sendet ISO-Datums-/Zeitstring (z.B. "YYYY-MM-DDTHH:MM:SS" oder "YYYY-MM-DD HH:MM:SS")
-                    // Wenn der String keine Zeitzoneninformation enthält, wird er standardmäßig als lokale Zeit interpretiert.
-                    // Um sicherzustellen, dass er als UTC interpretiert und dann in die lokale Zeitzone des Benutzers konvertiert wird,
-                    // fügen wir ein 'Z' (UTC-Indikator) hinzu, falls es fehlt.
-                    let dateString = value;
-                    if (!value.endsWith('Z') && !value.includes('+') && !value.includes('-')) {
-                        // Wenn keine Zeitzoneninfo, als UTC behandeln, indem 'Z' hinzugefügt wird
-                        dateString = value.replace(' ', 'T') + 'Z'; // z.B. "2023-01-01 10:00:00" -> "2023-01-01T10:00:00Z"
-                    }
-
-                    const dt_object = new Date(dateString);
+                    const dt_object = new Date(value); // Direktes Parsen des ISO 8601-Strings
 
                     // Überprüfen, ob das Datum gültig ist
                     if (isNaN(dt_object.getTime())) {
@@ -357,24 +347,10 @@
                     }
 
                     // Formatierung in die lokale Zeitzone des Benutzers
-                    const options = {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false // 24-Stunden-Format
-                    };
-                    // toLocaleString wird die UTC-Zeit korrekt in die lokale Zeitzone des Browsers konvertieren
-                    // und dann formatieren.
-                    const formatted = dt_object.toLocaleString('de-DE', options); // Beispiel für Deutsch
-                    // Das Ergebnis ist z.B. "31.12.2023, 23:00" oder "01.01.2024, 01:00"
-                    // Wir müssen den Trenner zwischen Datum und Uhrzeit anpassen und die Jahreszahl entfernen.
-                    const parts = formatted.split(', ');
-                    if (parts.length === 2) {
-                        // Entfernt die Jahreszahl (vier Ziffern) und ersetzt das Komma durch " - "
-                        return `${parts[0].replace(/\.\d{4}$/, '')}. - ${parts[1]}`;
-                    }
-                    return formatted; // Fallback, falls Format nicht wie erwartet ist
+                    const datePart = dt_object.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                    const timePart = dt_object.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    
+                    return `${datePart} - ${timePart}`;
                 } catch (e) {
                     console.error("Date formatting error:", e);
                     return 'N/A'; // Fallback, falls Format ungültig ist
@@ -595,7 +571,7 @@
                                                 Nicht sauber
                                             </button>
                                         </div>
-                                    </div> {# THIS WAS THE PROBLEM: PREVIOUSLY IT WAS </td></tr> #}
+                                    </div> 
                                 </div>
                             `;
                         });

@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, session, current_app, render_temp
 from db import get_db
 from decorators import role_required
 import datetime
+from datetime import timezone # Importiere timezone
 
 print("warnings.py wird geladen...")
 
@@ -16,7 +17,7 @@ def warnings_page():
     print("warnings_page Funktion wird aufgerufen!")
     if request.method == 'GET':
         dark_mode_enabled = session.get('dark_mode_enabled', False)
-        # Stelle sicher, dass warnings.html im 'templates'-Ordner liegt!
+        # Stell sicher, dass warnings.html im 'templates'-Ordner liegt!
         return render_template('warnings.html', dark_mode_enabled=dark_mode_enabled)
     
     if request.method == 'POST':
@@ -89,8 +90,23 @@ def api_warnings_data():
         for warning in all_warnings:
             stand_id = warning['stand_id']
             if stand_id in grouped_warnings: 
-                grouped_warnings[stand_id]['warnings'].append(dict(warning))
-                if not warning['is_invalidated']:
+                warning_dict = dict(warning) # Convert row to dict for modification
+                
+                # Convert timestamps to timezone-aware ISO 8601 strings
+                if warning_dict['timestamp']:
+                    dt_object = datetime.datetime.fromisoformat(warning_dict['timestamp'])
+                    if dt_object.tzinfo is None:
+                        dt_object = dt_object.replace(tzinfo=timezone.utc)
+                    warning_dict['timestamp'] = dt_object.isoformat()
+                
+                if warning_dict['invalidation_timestamp']:
+                    dt_object_inval = datetime.datetime.fromisoformat(warning_dict['invalidation_timestamp'])
+                    if dt_object_inval.tzinfo is None:
+                        dt_object_inval = dt_object_inval.replace(tzinfo=timezone.utc)
+                    warning_dict['invalidation_timestamp'] = dt_object_inval.isoformat()
+
+                grouped_warnings[stand_id]['warnings'].append(warning_dict)
+                if not warning_dict['is_invalidated']: # Use modified dict for status check
                     grouped_warnings[stand_id]['total_warnings'] += 1
         
         grouped_warnings_list = list(grouped_warnings.values())
@@ -124,8 +140,10 @@ def invalidate_warning(warning_id):
     user_id = session['user_id']
 
     try:
-        cursor.execute("UPDATE warnings SET is_invalidated = 1, invalidated_by_user_id = ?, invalidation_comment = ?, invalidation_timestamp = CURRENT_TIMESTAMP WHERE id = ?",
-                       (user_id, invalidation_comment, warning_id))
+        # Use timezone-aware datetime for CURRENT_TIMESTAMP equivalent
+        current_time_utc = datetime.datetime.now(timezone.utc).isoformat()
+        cursor.execute("UPDATE warnings SET is_invalidated = 1, invalidated_by_user_id = ?, invalidation_comment = ?, invalidation_timestamp = ? WHERE id = ?",
+                       (user_id, invalidation_comment, current_time_utc, warning_id))
         db.commit()
         return jsonify(success=True, message="Verwarnung erfolgreich als ungültig markiert.")
     except sqlite3.Error as e:
