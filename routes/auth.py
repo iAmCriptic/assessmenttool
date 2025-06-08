@@ -48,11 +48,26 @@ def login():
         user_roles = [row['name'] for row in cursor.fetchall()]
         session['user_roles'] = user_roles # Liste der Rollennamen in der Session speichern
 
+        # Bestimme die primäre Rolle für die Rückgabe an den Client
+        # Wenn der Benutzer mehrere Rollen hat, wird die erste in der Liste gesendet.
+        # Wenn der Benutzer keine Rollen hat, ist user_role_to_send None, und Flutter verwendet seinen Standardwert.
+        user_role_to_send = user_roles[0] if user_roles else None
+
         # Wenn Admin sich mit Standardpasswort anmeldet, ist Setup erforderlich
         if user['username'] == 'admin' and user['password'] == current_app.config['DEFAULT_ADMIN_PASSWORD']:
-            return jsonify({'success': True, 'message': 'Admin-Login erfolgreich, Setup erforderlich.', 'redirect_to_setup': True})
+            return jsonify({
+                'success': True,
+                'message': 'Admin-Login erfolgreich, Setup erforderlich.',
+                'redirect_to_setup': True,
+                'user_role': user_role_to_send # Sende die Rolle auch bei Admin-Setup
+            })
 
-        return jsonify({'success': True, 'message': 'Login erfolgreich.', 'redirect_to_setup': False})
+        return jsonify({
+            'success': True,
+            'message': 'Login erfolgreich.',
+            'redirect_to_setup': False,
+            'user_role': user_role_to_send # Sende die Rolle
+        })
     else:
         return jsonify({'success': False, 'message': 'Ungültiger Benutzername oder Passwort'}), 401
 
