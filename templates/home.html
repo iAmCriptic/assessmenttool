@@ -266,6 +266,7 @@
             </div>
 
             {# Card for Room Inspections #}
+            {% if 'Inspektor' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
             <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-broom text-5xl text-purple-600 dark:text-purple-400 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Rauminspektionen</h3>
@@ -277,8 +278,10 @@
                     Verwalten
                 </a>
             </div>
+            {% endif %}
 
             {# Card for Warnings #}
+            {% if 'Verwarner' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
             <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-exclamation text-5xl text-red-600 dark:text-red-400 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Verwarnungen</h3>
@@ -290,9 +293,10 @@
                     Verwalten
                 </a>
             </div>
+            {% endif %}
 
             {# Card for Admin Management (only for admin) #}
-            {% if session.get('is_admin') %}
+            {'Administrator' in session.get('user_roles', []) %}
             <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-settings text-5xl text-gray-700 dark:text-gray-300 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Admin-Verwaltung</h3>

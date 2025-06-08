@@ -18,12 +18,17 @@ def evaluate_page():
         db = get_db()
         cursor = db.cursor()
         data = request.get_json() 
+        
+        # DEBUG: Log raw received data
+        print(f"DEBUG (Flask): Received data for /evaluate POST: {data}")
+
         selected_stand_id = data.get('stand_id')
         scores_data = data.get('scores')
         
         user_id = session['user_id']
 
         if not selected_stand_id or not scores_data:
+            print(f"DEBUG (Flask): Missing stand_id or scores_data. Stand ID: {selected_stand_id}, Scores: {scores_data}")
             return jsonify({'success': False, 'message': 'Stand-ID und Bewertungen sind erforderlich.'}), 400
 
         try:
@@ -36,6 +41,7 @@ def evaluate_page():
                 # Vorhandene Punktzahlen für diese Bewertung löschen, um Duplikate oder alte Punktzahlen zu vermeiden
                 cursor.execute("DELETE FROM evaluation_scores WHERE evaluation_id = ?", (evaluation_id,))
                 message = "Deine Bewertung wurde erfolgreich aktualisiert!"
+                print(f"DEBUG (Flask): Updated existing evaluation {evaluation_id} for user {user_id}, stand {selected_stand_id}")
             else:
                 cursor.execute(
                     "INSERT INTO evaluations (stand_id, user_id) VALUES (?, ?)",
@@ -43,9 +49,11 @@ def evaluate_page():
                 )
                 evaluation_id = cursor.lastrowid
                 message = "Deine Bewertung wurde erfolgreich gespeichert!"
+                print(f"DEBUG (Flask): Created new evaluation {evaluation_id} for user {user_id}, stand {selected_stand_id}")
             
             # Kriterien-Maximalpunktzahlen abrufen
             criteria_max_scores = {c['id']: c['max_score'] for c in cursor.execute("SELECT id, max_score FROM criteria").fetchall()}
+            print(f"DEBUG (Flask): Criteria max scores: {criteria_max_scores}")
 
             # Neue Punktzahlen einfügen
             for criterion_id_str, score_value in scores_data.items():
@@ -53,12 +61,14 @@ def evaluate_page():
                 max_score = criteria_max_scores.get(criterion_id)
 
                 if max_score is None:
+                    print(f"DEBUG (Flask): Criterion {criterion_id} not found in max scores, skipping.")
                     # Kriterium nicht gefunden, überspringen
                     continue 
                 
                 try:
                     score_value = int(score_value)
                 except (ValueError, TypeError):
+                    print(f"DEBUG (Flask): Invalid score value '{score_value}' for criterion {criterion_id}, deleting any existing entry.")
                     # Wenn der Wert keine gültige Zahl ist, lösche einen vorhandenen Eintrag für dieses Kriterium
                     cursor.execute("DELETE FROM evaluation_scores WHERE evaluation_id = ? AND criterion_id = ?",
                                    (evaluation_id, criterion_id))
@@ -68,19 +78,23 @@ def evaluate_page():
                     # Füge die Punktzahl ein (kein Update nötig, da wir vorher gelöscht haben)
                     cursor.execute("INSERT INTO evaluation_scores (evaluation_id, criterion_id, score) VALUES (?, ?, ?)",
                                    (evaluation_id, criterion_id, score_value))
+                    print(f"DEBUG (Flask): Inserted score {score_value} for criterion {criterion_id} in evaluation {evaluation_id}")
                 else:
                     # Wenn die Punktzahl außerhalb des gültigen Bereichs liegt, lösche sie
                     cursor.execute("DELETE FROM evaluation_scores WHERE evaluation_id = ? AND criterion_id = ?",
                                    (evaluation_id, criterion_id))
+                    print(f"DEBUG (Flask): Score {score_value} for criterion {criterion_id} out of range, deleting any existing entry.")
 
             db.commit()
             return jsonify({'success': True, 'message': message})
 
         except sqlite3.Error as e:
             db.rollback()
+            print(f"Database error in evaluate_page (POST): {e}")
             return jsonify({'success': False, 'message': f"Fehler beim Speichern/Aktualisieren der Bewertung: {e}"}), 500
         except Exception as e:
             db.rollback()
+            print(f"An unexpected error occurred in evaluate_page (POST): {e}")
             return jsonify({'success': False, 'message': f"Ein unerwarteter Fehler ist aufgetreten: {e}"}), 500
     
 
@@ -92,14 +106,18 @@ def api_evaluate_initial_data():
     cursor = db.cursor()
 
     try:
+        # Hinzufügen von s.description zum SELECT-Statement für Stände
         stands = cursor.execute('''
-            SELECT s.id, s.name, r.name AS room_name
+            SELECT s.id, s.name, s.description, r.name AS room_name
             FROM stands s
             LEFT JOIN rooms r ON s.room_id = r.id
             ORDER BY s.name
         ''').fetchall()
         
         criteria = cursor.execute("SELECT id, name, description, max_score FROM criteria ORDER BY ID").fetchall()
+
+        print(f"DEBUG (Flask): Initial data Stands: {[dict(s) for s in stands]}")
+        print(f"DEBUG (Flask): Initial data Criteria: {[dict(c) for c in criteria]}")
 
         return jsonify({
             'success': True,
@@ -162,7 +180,10 @@ def api_user_evaluation_scores(stand_id):
     cursor = db.cursor()
     user_id = session.get('user_id')
 
+    print(f"DEBUG (Flask): Requesting user scores for stand_id={stand_id}, user_id={user_id}")
+
     if not user_id:
+        print("DEBUG (Flask): User not logged in for api_user_evaluation_scores.")
         return jsonify({'success': False, 'message': 'Benutzer nicht angemeldet.'}), 401
 
     try:
@@ -181,8 +202,10 @@ def api_user_evaluation_scores(stand_id):
             # Zeitstempel für die Anzeige formatieren
             formatted_timestamp = datetime.datetime.fromisoformat(timestamp).strftime('%d.%m.%Y %H:%M')
 
+            print(f"DEBUG (Flask): Found existing evaluation {evaluation_id} for stand {stand_id}, scores: {scores}, timestamp: {formatted_timestamp}")
             return jsonify({'success': True, 'exists': True, 'scores': scores, 'timestamp': formatted_timestamp})
         else:
+            print(f"DEBUG (Flask): No existing evaluation found for stand {stand_id} and user {user_id}.")
             return jsonify({'success': True, 'exists': False, 'scores': {}})
     except sqlite3.Error as e:
         print(f"Database error in api_user_evaluation_scores: {e}")
@@ -337,3 +360,4 @@ def api_evaluation_details(evaluation_id):
     except Exception as e:
         print(f"An unexpected error occurred in api_evaluation_details: {e}")
         return jsonify({'success': False, 'message': f'Ein unerwarteter Fehler ist aufgetreten: {e}'}), 500
+
