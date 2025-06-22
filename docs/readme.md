@@ -104,9 +104,5 @@ iAmCriptic
 
 Project Link: [https://github.com/iAmCriptic/assessmenttool](https://github.com/iAmCriptic/assessmenttool)
 ## Acknowledgments
-
-Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
-
-
 - [Readme](https://github.com/iAmCriptic/assessmenttool?tab=readme-ov-file)
 - [Security Policies](https://github.com/iAmCriptic/assessmenttool?tab=security-ov-file)
