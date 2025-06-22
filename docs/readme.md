@@ -60,9 +60,19 @@ You'll need the dependencies from   ```requirements.txt``` as well as Python to 
    ```
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+This assessment tool can be used for important components of a summer festival or similar events. It allows you to rate stands, inspect rooms, or issue warnings to stands that don't follow the rules.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+##### Login
+![Startpage ](https://github.com/iAmCriptic/assessmenttool/blob/main/datas/Tool_Showcase/Screenshot%202025-06-22%20180020.png?raw=true)
+
+##### Startpage
+![Startpage ](https://github.com/iAmCriptic/assessmenttool/blob/main/datas/Tool_Showcase/Screenshot%202025-06-22%20180044.png?raw=true)
+
+##### Assess 
+![Startpage ](https://github.com/iAmCriptic/assessmenttool/blob/main/datas/Tool_Showcase/Screenshot%202025-06-22%20180127.png?raw=true)
+
+##### Costumize
+ ![Startpage ](https://github.com/iAmCriptic/assessmenttool/blob/main/datas/Tool_Showcase/Screenshot%202025-06-22%20180118.png?raw=true)
 ## Roadmap
 
 - [x] Changelog
