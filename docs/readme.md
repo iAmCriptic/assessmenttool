@@ -34,6 +34,11 @@ As an Administrator, you can:
 - Effortlessly manage data: Set up users, stands, rooms, and criteria using simple Excel imports.
 - Reset data: Clear evaluations, inspections, and warnings as needed.
 - Customize your interface: Personalize the design of your page.
+
+
+
+The APP
+The accompanying app can be found in the  [Assesmenttoo App](https://github.com/iAmCriptic/assessmenttool_app) project.
 ### Built With
 
 This project was implemented and created by students of the Merian School (Berlin Köpenick). We used Python and Flask to build the web server, and HTML, CSS, & JavaScript for the frontend.
