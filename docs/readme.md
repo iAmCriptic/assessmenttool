@@ -9,7 +9,7 @@
 The top assessment tool for stalls at summer fairs
 <br/>
 <br/>
-<a href="https://github.com/iAmCriptic/assessmenttool/"><strong>Explore the docs »</strong></a>
+<a href="https://github.com/iAmCriptic/assessmenttool_app/"><strong>View the Assessmenttool App »</strong></a>
 <br/>
 <br/>
   
