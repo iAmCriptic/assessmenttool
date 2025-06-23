@@ -160,6 +160,42 @@ def init_db():
         )
     """)
 
+    # NEUE TABELLE FÜR LAGEPLÄNE
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS floor_plans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            image_path TEXT NOT NULL,
+            width_px REAL,
+            height_px REAL,
+            scale_point1_x REAL,
+            scale_point1_y REAL,
+            scale_point2_x REAL,
+            scale_point2_y REAL,
+            scale_distance_meters REAL,
+            is_active INTEGER DEFAULT 0 -- Nur ein Plan kann aktiv sein
+        )
+    """)
+
+    # NEUE TABELLE FÜR LAGEPLAN-OBJEKTE (Stände, Mülleimer, Steckdosen)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS floor_plan_objects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            plan_id INTEGER NOT NULL,
+            type TEXT NOT NULL, -- 'stand', 'trash_can', 'power_outlet'
+            x REAL NOT NULL,
+            y REAL NOT NULL,
+            width REAL,
+            height REAL,
+            color TEXT, -- Für Stände (Hex-Code)
+            trash_can_color TEXT, -- Für Mülleimer ('yellow', 'blue', 'black')
+            power_outlet_label TEXT, -- Für Steckdosen (die Zahl, z.B. '1')
+            stand_id INTEGER, -- Verknüpfung zum stands-Tabelle, wenn Typ 'stand'
+            FOREIGN KEY (plan_id) REFERENCES floor_plans(id) ON DELETE CASCADE,
+            FOREIGN KEY (stand_id) REFERENCES stands(id) ON DELETE SET NULL
+        )
+    """)
+
     db.commit()
 
 def add_initial_data():
