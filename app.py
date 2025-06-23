@@ -29,6 +29,7 @@ from routes.ranking import ranking_bp
 from routes.general import general_bp
 from routes.excel_uploads import excel_uploads_bp
 from routes.errors import errors_bp
+from routes.map import map_bp # NEU: Importiere den Map Blueprint
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -53,6 +54,7 @@ app.register_blueprint(ranking_bp)
 app.register_blueprint(general_bp)
 app.register_blueprint(excel_uploads_bp)
 app.register_blueprint(errors_bp)
+app.register_blueprint(map_bp) # NEU: Registriere den Map Blueprint
 
 
 # Vor jeder Anfrage ausführen
@@ -65,7 +67,8 @@ def before_request_checks():
         'auth.admin_setup',
         'general.static_files', # Wichtig für CSS, JS, Bilder
         'admin_settings.api_get_settings', # Admin-Einstellungen API muss ohne Login erreichbar sein, um Logo/Hintergrund zu laden
-        'admin_settings.api_upload_logo' # Logo-Upload sollte nur für Admins zugänglich sein, daher nicht hier
+        'admin_settings.api_upload_logo', # Logo-Upload sollte nur für Admins zugänglich sein, daher nicht hier
+        'map.serve_uploaded_plans' # Erlaube Zugriff auf hochgeladene Planbilder
     ]
     # Erlaube alle API-Aufrufe, die nicht explizit durch @role_required geschützt sind
     # (dies wird von den Blueprints selbst gehandhabt)
@@ -105,4 +108,3 @@ if __name__ == '__main__':
         init_db()
         add_initial_data()
     app.run(debug=True, host='0.0.0.0', port='5000')  # Host auf
-

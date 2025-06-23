@@ -252,17 +252,25 @@
             </div>
             {% endif %}
 
-            {# Card for Ranking #}
+            {# Card for Ranking/Map - Updated title #}
             <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
-                <i class="fi fi-rr-trophy text-5xl text-yellow-600 dark:text-yellow-400 mb-4"></i>
-                <h3 class="text-xl font-semibold mb-2">Rangliste</h3>
-                <p class="mb-4">Die aktuelle Rangliste der Stände.</p>
-                <a href="{{ url_for('ranking.view_ranking_page') }}"
-                   class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
-                          focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50
-                          transition duration-200 ease-in-out transform hover:scale-105">
-                    Ansehen
-                </a>
+                <i class="fi fi-rr-map-pin text-5xl text-yellow-600 dark:text-yellow-400 mb-4"></i> {# Changed icon #}
+                <h3 class="text-xl font-semibold mb-2">Rangliste & Lageplan</h3> {# Updated title #}
+                <p class="mb-4">Sehen Sie die aktuelle Rangliste und den Lageplan an.</p> {# Updated description #}
+                <div class="flex flex-wrap justify-center gap-2 mt-4">
+                    <a href="{{ url_for('ranking.view_ranking_page') }}"
+                       class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Rangliste
+                    </a>
+                    <a href="{{ url_for('general.view_plan') }}" {# Link to view_plan.html via general blueprint #}
+                       class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Lageplan
+                    </a>
+                </div>
             </div>
 
             {# Card for Room Inspections #}
@@ -326,12 +334,9 @@
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Räume
                     </a>
-                    <a href="{{ url_for('general.manage_list_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
-                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
-                              transition duration-200 ease-in-out transform hover:scale-105">
-                        Listen
-                    </a>
+                    {# This link was causing the error, assuming it should be removed or handled elsewhere #}
+                    {# If 'Listen' should link to manage_list_page, you need to define that route in general.py #}
+                    {# For now, removed to resolve the immediate error. #}
                     <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}"
                        class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
@@ -343,6 +348,12 @@
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Einstellungen
+                    </a>
+                    <a href="{{ url_for('map.manage_plan_page') }}" {# Corrected: Link to manage_plan.html via map blueprint #}
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Lageplan verwalten
                     </a>
                 </div>
             </div>

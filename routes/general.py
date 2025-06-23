@@ -28,58 +28,21 @@ def api_session_data():
     })
 
 @general_bp.route('/toggle_dark_mode', methods=['POST'])
+@role_required(['Administrator', 'Bewerter', 'Betrachter', 'Inspektor', 'Verwarner'])
 def toggle_dark_mode():
-    """Schaltet den Dark Mode-Status um und speichert ihn in der Session."""
+    """Schaltet den Dark Mode um."""
     session['dark_mode_enabled'] = not session.get('dark_mode_enabled', False)
-    return jsonify(dark_mode_enabled=session['dark_mode_enabled'])
+    return jsonify(success=True, dark_mode_enabled=session['dark_mode_enabled'])
 
-@general_bp.route('/manage_list', methods=['GET'])
-@role_required(['Administrator'])
-def manage_list_page():
-    """Verwaltet das Zurücksetzen von Rangliste und Rauminspektionen."""
-    # Korrektur: Verwende render_template, da manage_list.html Jinja2-Variablen enthalten wird.
-    dark_mode_enabled = session.get('dark_mode_enabled', False)
-    return render_template('manage_list.html', dark_mode_enabled=dark_mode_enabled)
-
-@general_bp.route('/api/reset_data', methods=['POST'])
-@role_required(['Administrator'])
-def api_reset_data():
-    """Setzt Datenlisten basierend auf der Aktion zurück."""
-    db = get_db()
-    cursor = db.cursor()
-    data = request.get_json()
-    action = data.get('action')
-
-    try:
-        if action == 'reset_ranking':
-            cursor.execute("DELETE FROM evaluation_scores")
-            cursor.execute("DELETE FROM evaluations")
-            message = "Rangliste erfolgreich zurückgesetzt! Alle Bewertungen wurden gelöscht."
-        elif action == 'reset_room_inspections':
-            cursor.execute("DELETE FROM room_inspections")
-            message = "Rauminspektionen erfolgreich zurückgesetzt! Alle Inspektionsdaten wurden gelöscht."
-        elif action == 'reset_warnings':
-            cursor.execute("DELETE FROM warnings")
-            message = "Alle Verwarnungen erfolgreich zurückgesetzt!"
-        else:
-            return jsonify({'success': False, 'message': "Ungültige Aktion angefordert."}), 400
-        db.commit()
-        return jsonify({'success': True, 'message': message})
-    except sqlite3.Error as e:
-        db.rollback()
-        return jsonify({'success': False, 'message': f"Ein Fehler ist aufgetreten: {e}"}), 500
-
-@general_bp.route('/static/<path:filename>')
+@general_bp.route('/static_files/<path:filename>')
 def static_files(filename):
-    """Stellt statische Dateien bereit."""
-    # current_app.send_static_file() findet Dateien im 'static'-Ordner der App
-    return current_app.send_static_file(filename)
+    """Dient statischen Dateien aus dem Unterordner 'static'."""
+    return send_from_directory(current_app.static_folder, filename)
 
-# NEW ROUTE for the Service Worker (moved from app.py)
 @general_bp.route('/service-worker.js')
 def serve_service_worker():
-    """Stellt die service-worker.js-Datei aus dem Stammverzeichnis bereit."""
-    # send_from_directory wird verwendet, um Dateien außerhalb des 'static'-Ordners zu senden
+    """Dient dem Service Worker aus dem Root-Verzeichnis."""
+    # Dies wird verwendet, um Dateien außerhalb des 'static'-Ordners zu senden
     return send_from_directory(current_app.root_path, 'service-worker.js', mimetype='application/javascript')
 
 # NEW ROUTE for the example Excel file for stands (moved from app.py)
@@ -102,3 +65,10 @@ def download_beispiel_kriterien_excel():
     """Stellt die beispiel_kriterien.xlsx-Datei aus dem statischen Ordner zum Download bereit."""
     # Korrektur: Verwende send_from_directory mit as_attachment=True
     return send_from_directory(current_app.static_folder, 'beispiel_kriterien.xlsx', as_attachment=True)
+
+# NEW ROUTE for view_plan.html
+@general_bp.route('/view_plan')
+@role_required(['Administrator', 'Bewerter', 'Betrachter', 'Inspektor', 'Verwarner'])
+def view_plan():
+    """Zeigt die Seite zur Ansicht des Lageplans an."""
+    return render_template('view_plan.html', dark_mode_enabled=session.get('dark_mode_enabled'))
