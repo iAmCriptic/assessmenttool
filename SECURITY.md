@@ -11,6 +11,13 @@ currently being supported with security updates.
 | 2.0.1   | :white_check_mark: |
 | <2.0.1  | :x:                |
 
+
+## Beta Info
+
+The Beta 3.0.0 includes new features, but cause of issues the options to reset the list's isn't availeble anymore.
+We hope to fix it soon. Stay Patient
+
+
 ## Reporting a Vulnerability
 
 We appreciate your efforts to responsibly disclose any bugs, errors, or security vulnerabilities you find in the Bewertungstool. Your contribution helps us keep the project secure for everyone.
