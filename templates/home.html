@@ -264,7 +264,7 @@
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Rangliste
                     </a>
-                    <a href="{{ url_for('general.view_plan') }}" {# Link to view_plan.html via general blueprint #}
+                    <a href="{{ url_for('general.view_plan') }}" {# New button for view_stands (will be manage_plan for now) #}
                        class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
@@ -334,9 +334,12 @@
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Räume
                     </a>
-                    {# This link was causing the error, assuming it should be removed or handled elsewhere #}
-                    {# If 'Listen' should link to manage_list_page, you need to define that route in general.py #}
-                    {# For now, removed to resolve the immediate error. #}
+                    <a href="{{ url_for('general.manage_list_page') }}"
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
+                              transition duration-200 ease-in-out transform hover:scale-105">
+                        Listen
+                    </a>
                     <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}"
                        class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
@@ -349,7 +352,7 @@
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Einstellungen
                     </a>
-                    <a href="{{ url_for('map.manage_plan_page') }}" {# Corrected: Link to manage_plan.html via map blueprint #}
+                    <a href="{{ url_for('map.manage_plan_page') }}" {# NEW: Link to manage floor plan #}
                        class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">

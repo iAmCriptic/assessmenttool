@@ -72,3 +72,11 @@ def download_beispiel_kriterien_excel():
 def view_plan():
     """Zeigt die Seite zur Ansicht des Lageplans an."""
     return render_template('view_plan.html', dark_mode_enabled=session.get('dark_mode_enabled'))
+
+@general_bp.route('/manage_list', methods=['GET'])
+@role_required(['Administrator'])
+def manage_list_page():
+    """Verwaltet das Zurücksetzen von Rangliste und Rauminspektionen."""
+    # Korrektur: Verwende render_template, da manage_list.html Jinja2-Variablen enthalten wird.
+    dark_mode_enabled = session.get('dark_mode_enabled', False)
+    return render_template('manage_list.html', dark_mode_enabled=dark_mode_enabled)
