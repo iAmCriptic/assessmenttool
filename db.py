@@ -189,6 +189,7 @@ def init_db():
             height REAL,
             color TEXT, -- Für Stände (Hex-Code)
             trash_can_color TEXT, -- Für Mülleimer ('yellow', 'blue', 'black')
+            wc_label TEXT, -- Für WC (z.B. 'WC')      
             power_outlet_label TEXT, -- Für Steckdosen (die Zahl, z.B. '1')
             stand_id INTEGER, -- Verknüpfung zum stands-Tabelle, wenn Typ 'stand'
             custom_stand_name TEXT, -- NEU: Spalte für benutzerdefinierten Namen

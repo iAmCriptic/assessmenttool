@@ -223,6 +223,9 @@
         }
         .toolbox-item.trash-can { width: 60px; height: 60px; }
         .toolbox-item.power-outlet { width: 60px; height: 60px; }
+        /* Add styling for WC icon */
+        .toolbox-item.wc { width: 60px; height: 60px; }
+
 
         /* Color picker container */
         .color-picker-container {
@@ -428,6 +431,11 @@
                                 <i class="fi fi-rr-plug"></i>
                                 <span>Steckdose</span>
                             </div>
+                            <!-- NEU: WC-Objekt -->
+                            <div class="toolbox-item" draggable="true" data-object-type="wc">
+                                <i class="fi fi-rr-toilet"></i>
+                                <span>WC</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -494,6 +502,12 @@
                                 <input type="text" id="powerOutletLabel" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                             </div>
 
+                            <!-- NEU: WC-Eigenschaften -->
+                            <div id="wcProperties" class="mb-3 hidden">
+                                <label for="wcLabel" class="block text-sm font-medium text-gray-700 dark:text-gray-300">WC-Bezeichnung (optional):</label>
+                                <input type="text" id="wcLabel" placeholder="z.B. WC-Herren" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+                            </div>
+
                             <div class="flex gap-2 mt-4">
                                 <button id="saveObjectButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
                                     Speichern
@@ -543,6 +557,8 @@
         const trashCanProperties = document.getElementById('trashCanProperties');
         const powerOutletProperties = document.getElementById('powerOutletProperties');
         const powerOutletLabelInput = document.getElementById('powerOutletLabel');
+        const wcProperties = document.getElementById('wcProperties'); // NEU: WC-Eigenschaften
+        const wcLabelInput = document.getElementById('wcLabel');       // NEU: WC-Bezeichnung
         const saveObjectButton = document.getElementById('saveObjectButton');
         const deleteObjectButton = document.getElementById('deleteObjectButton');
         const legendContent = document.getElementById('legendContent');
@@ -691,9 +707,21 @@
                                 ctx.fillStyle = '#000000'; // Black text for light colors
                             }
 
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(displayName, obj.x + obj.width / 2, obj.y + obj.height / 2);
+                            // NEU: Textdrehung basierend auf Seitenverhältnis
+                            if (obj.height >= obj.width * 2) { // Wenn Länge mindestens doppelt so breit
+                                ctx.save(); // Kontext für Rotation speichern
+                                // Drehmittelpunkt zum Zentrum des Standes verschieben
+                                ctx.translate(obj.x + obj.width / 2, obj.y + obj.height / 2);
+                                ctx.rotate(-Math.PI / 2); // 90 Grad gegen den Uhrzeigersinn drehen
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(displayName, 0, 0); // Text bei (0,0) des gedrehten Kontexts zeichnen
+                                ctx.restore(); // Kontext wiederherstellen
+                            } else {
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(displayName, obj.x + obj.width / 2, obj.y + obj.height / 2);
+                            }
                         }
                         break;
                     case 'trash_can':
@@ -728,6 +756,20 @@
                         obj.width = outletRadius * 2;
                         obj.height = outletRadius * 2;
                         break;
+                    case 'wc': // NEU: WC-Objekt zeichnen
+                        ctx.fillStyle = '#8bc34a'; // Light green for WC
+                        ctx.strokeStyle = '#000000';
+                        const wcSize = 25; // Fixed size for WC (e.g., a square)
+                        ctx.fillRect(obj.x, obj.y, wcSize, wcSize);
+                        ctx.strokeRect(obj.x, obj.y, wcSize, wcSize);
+                        ctx.fillStyle = '#000000'; // Black for text
+                        ctx.font = `${14 / scale}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(obj.wc_label || 'WC', obj.x + wcSize / 2, obj.y + wcSize / 2);
+                        obj.width = wcSize; // Store fixed width/height for consistent interaction
+                        obj.height = wcSize;
+                        break;
                 }
 
                 // Draw selection rectangle if object is selected
@@ -740,8 +782,8 @@
                         ctx.fillStyle = '#3b82f6';
                         const handleSize = 10 / scale;
                         ctx.fillRect(obj.x + obj.width - handleSize, obj.y + obj.height - handleSize, handleSize, handleSize);
-                    } else { // For trash can and power outlet, just a thicker border as they are fixed size
-                        ctx.stroke(); // Close the path for the circle
+                    } else { // For trash can, power outlet, WC, just a thicker border as they are fixed size
+                        ctx.stroke(); // Close the path for the circle/rectangle
                     }
                 }
             });
@@ -814,6 +856,12 @@
                     if (distance <= radius) {
                         return obj;
                     }
+                } else if (obj.type === 'wc') { // NEU: WC-Objekt-Prüfung
+                    const wcSize = 25; // Match drawing size
+                    if (x >= obj.x && x <= obj.x + wcSize &&
+                        y >= obj.y && y <= obj.y + wcSize) {
+                        return obj;
+                    }
                 } else { // For rectangular objects (stand)
                     if (x >= obj.x && x <= obj.x + obj.width &&
                         y >= obj.y && y <= obj.y + obj.height) {
@@ -849,6 +897,7 @@
             standProperties.classList.add('hidden');
             trashCanProperties.classList.add('hidden');
             powerOutletProperties.classList.add('hidden');
+            wcProperties.classList.add('hidden'); // NEU: WC-Eigenschaften ausblenden
             objectNameInput.classList.add('hidden'); // This is for general non-stand objects, hide by default
             objectStandIdSelect.classList.remove('hidden'); // Ensure stand selection is visible by default
 
@@ -904,6 +953,14 @@
                 objectStandIdSelect.classList.add('hidden'); // Hide stand selection for power outlets
 
                 powerOutletLabelInput.value = obj.power_outlet_label || '';
+            } else if (obj.type === 'wc') { // NEU: WC-Eigenschaften anzeigen
+                wcProperties.classList.remove('hidden');
+                objectNameInput.classList.remove('hidden'); // WC kann auch einen allgemeinen Namen haben
+                objectNameInput.placeholder = 'Name (optional)'; // Angepasster Placeholder
+                objectNameInput.value = obj.name || ''; // Allgemeiner Name für WC
+                objectStandIdSelect.classList.add('hidden'); // Stand-Auswahl für WC ausblenden
+
+                wcLabelInput.value = obj.wc_label || ''; // WC-Bezeichnung
             }
 
             draw(); // Redraw to show selection
@@ -932,9 +989,23 @@
                             standColors[stand.color].push(nameToUse);
                         }
                    });
+            
+            // NEU: WC-Objekte zur Legende hinzufügen (falls vorhanden)
+            const wcObjects = objects.filter(obj => obj.type === 'wc' && obj.wc_label);
+            if (wcObjects.length > 0) {
+                const wcNames = wcObjects.map(obj => obj.wc_label).sort().join(', ');
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <div class="legend-color-box" style="background-color: #8bc34a;"></div>
+                    <span>WC: ${wcNames}</span>
+                `;
+                legendContent.appendChild(legendItem);
+            }
 
-            if (Object.keys(standColors).length === 0) {
-                legendContent.innerHTML = '<p class="text-sm text-gray-600 dark:text-gray-300">Keine Stände mit Farbe platziert.</p>';
+
+            if (Object.keys(standColors).length === 0 && wcObjects.length === 0) { // NEU: Prüfung für WC-Objekte hinzufügen
+                legendContent.innerHTML = '<p class="text-sm text-gray-600 dark:text-gray-300">Keine Objekte platziert oder Legende aktualisiert.</p>'; // Angepasster Text
                 return;
             }
 
@@ -1039,6 +1110,7 @@
                         color: obj.color,
                         trash_can_color: obj.trash_can_color,
                         power_outlet_label: obj.power_outlet_label,
+                        wc_label: obj.wc_label, // NEU: wc_label senden
                         stand_id: obj.stand_id, // Can be null now
                         custom_stand_name: obj.custom_stand_name // Sende custom_stand_name
                     })
@@ -1358,8 +1430,9 @@
                 color: '#cccccc', // Default color for stand
                 trash_can_color: 'yellow', // Default for trash can
                 power_outlet_label: '1', // Default for power outlet
+                wc_label: '', // NEU: Standardwert für WC-Bezeichnung
                 stand_id: null,
-                custom_stand_name: null, // NEU: Initialisiere custom_stand_name
+                custom_stand_name: null, 
                 name: '', // Use 'name' for non-stand objects
                 stand_name: '' // For stands, synced with `stands` table
             };
@@ -1377,6 +1450,12 @@
                 newObject.height = 30; // Fixed pixel size
                 newObject.x -= 15; // Center the circle
                 newObject.y -= 15; // Center the circle
+            } else if (objectType === 'wc') { // NEU: WC-Objekt Initialisierung
+                newObject.width = 25; // Fixed pixel size
+                newObject.height = 25; // Fixed pixel size
+                newObject.x -= 12.5; // Center the square
+                newObject.y -= 12.5; // Center the square
+                newObject.wc_label = 'WC'; // Default label for WC
             }
 
             objects.push(newObject);
@@ -1670,6 +1749,9 @@
                 } else if (selectedObject.type === 'power_outlet') {
                     selectedObject.name = objectNameInput.value; // Store name for power outlets
                     selectedObject.power_outlet_label = powerOutletLabelInput.value;
+                } else if (selectedObject.type === 'wc') { // NEU: WC-Eigenschaften speichern
+                    selectedObject.name = objectNameInput.value; // Name für WC
+                    selectedObject.wc_label = wcLabelInput.value;
                 }
                 saveObject(selectedObject);
             }
