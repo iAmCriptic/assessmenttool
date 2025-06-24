@@ -460,6 +460,7 @@
                                 <select id="objectStandId" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                                     <option value="">Wählen Sie einen Stand...</option>
                                 </select>
+                                <!-- This input is now specifically for non-stand objects, or hidden for stands -->
                                 <input type="text" id="objectName" placeholder="Name (nur für nicht-Stand-Objekte)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                             </div>
 
@@ -470,6 +471,13 @@
                                 <input type="number" id="standHeight" step="0.1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                                 <label for="standColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">Farbe:</label>
                                 <input type="color" id="standColor" class="mt-1 block w-full h-10 border border-gray-300 rounded-md cursor-pointer">
+
+                                <!-- NEU: Checkbox und Eingabefeld für benutzerdefinierten Namen -->
+                                <div class="mt-3 flex items-center">
+                                    <input type="checkbox" id="useCustomStandName" class="mr-2">
+                                    <label for="useCustomStandName" class="text-sm font-medium text-gray-700 dark:text-gray-300">Benutzerdefinierten Namen verwenden</label>
+                                </div>
+                                <input type="text" id="standCustomNameInput" placeholder="Benutzerdefinierter Standname" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" disabled>
                             </div>
 
                             <div id="trashCanProperties" class="mb-3 hidden">
@@ -526,7 +534,7 @@
         const objectPropertiesPanel = document.getElementById('objectPropertiesPanel');
         const objectIdInput = document.getElementById('objectId');
         const objectTypeInput = document.getElementById('objectType');
-        const objectNameInput = document.getElementById('objectName');
+        const objectNameInput = document.getElementById('objectName'); // This is for general non-stand objects
         const objectStandIdSelect = document.getElementById('objectStandId');
         const standProperties = document.getElementById('standProperties');
         const standWidthInput = document.getElementById('standWidth');
@@ -544,6 +552,10 @@
         const darkModeToggle = document.getElementById('darkModeToggle');
         const backButton = document.getElementById('backButton');
         const mainContainer = document.querySelector('.main-container');
+
+        // NEU: Elemente für benutzerdefinierten Standnamen
+        const useCustomStandNameCheckbox = document.getElementById('useCustomStandName');
+        const standCustomNameInput = document.getElementById('standCustomNameInput');
 
 
         let floorPlanImage = new Image();
@@ -662,8 +674,11 @@
                         ctx.strokeStyle = '#000000';
                         ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
                         ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
-                        // Draw stand name if available
-                        if (obj.stand_name) {
+                        
+                        // Prioritize custom_stand_name for display, otherwise use stand_name
+                        const displayName = obj.custom_stand_name || obj.stand_name;
+                        
+                        if (displayName) {
                             ctx.font = `${14 / scale}px Arial`;
                             // Determine text color based on background for readability
                             const r = parseInt(obj.color.substring(1, 3), 16);
@@ -678,7 +693,7 @@
 
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
-                            ctx.fillText(obj.stand_name, obj.x + obj.width / 2, obj.y + obj.height / 2);
+                            ctx.fillText(displayName, obj.x + obj.width / 2, obj.y + obj.height / 2);
                         }
                         break;
                     case 'trash_can':
@@ -809,6 +824,21 @@
             return null;
         }
 
+        function updateStandNamingInputs() {
+            if (useCustomStandNameCheckbox.checked) {
+                objectStandIdSelect.disabled = true;
+                objectStandIdSelect.value = ''; // Clear selection
+                standCustomNameInput.disabled = false;
+                if (selectedObject) selectedObject.stand_id = null; // Update selected object in memory
+            } else {
+                objectStandIdSelect.disabled = false;
+                standCustomNameInput.disabled = true;
+                standCustomNameInput.value = ''; // Clear custom name
+                if (selectedObject) selectedObject.custom_stand_name = null; // Update selected object in memory
+            }
+            draw(); // Redraw to update stand name if affected
+        }
+
         function showObjectProperties(obj) {
             selectedObject = obj;
             objectPropertiesPanel.classList.remove('hidden');
@@ -819,17 +849,13 @@
             standProperties.classList.add('hidden');
             trashCanProperties.classList.add('hidden');
             powerOutletProperties.classList.add('hidden');
-            objectNameInput.classList.add('hidden'); // Hide for stands initially
-            objectStandIdSelect.classList.add('hidden'); // Hide for non-stands initially
-
-            // Populate common fields
-            objectNameInput.value = obj.name || ''; // Name is only for non-stand objects
+            objectNameInput.classList.add('hidden'); // This is for general non-stand objects, hide by default
+            objectStandIdSelect.classList.remove('hidden'); // Ensure stand selection is visible by default
 
             // Populate specific fields based on type
             if (obj.type === 'stand') {
                 standProperties.classList.remove('hidden');
-                objectStandIdSelect.classList.remove('hidden');
-                objectNameInput.classList.add('hidden'); // Stands use stand_id for naming
+                objectNameInput.classList.add('hidden'); // Ensure generic name input is hidden for stands
 
                 // Convert pixel dimensions to meters for display if pixels_per_meter is defined
                 standWidthInput.value = currentPlan && currentPlan.pixels_per_meter ? (obj.width / currentPlan.pixels_per_meter).toFixed(1) : (obj.width / 1).toFixed(1);
@@ -837,35 +863,30 @@
                 
                 standColorInput.value = obj.color || '#cccccc';
 
-                // Set selected stand in dropdown
-                if (obj.stand_id) {
+                // --- Logic for displaying custom name vs. stand ID ---
+                if (obj.custom_stand_name) {
+                    useCustomStandNameCheckbox.checked = true;
+                    standCustomNameInput.value = obj.custom_stand_name;
+                    objectStandIdSelect.value = ''; // Clear stand selection
+                } else if (obj.stand_id) {
+                    useCustomStandNameCheckbox.checked = false;
                     objectStandIdSelect.value = obj.stand_id;
+                    standCustomNameInput.value = ''; // Clear custom name input
                 } else {
+                    // Default state if neither is set (e.g., new stand)
+                    useCustomStandNameCheckbox.checked = false;
                     objectStandIdSelect.value = '';
+                    standCustomNameInput.value = '';
                 }
-
-                // Add event listener for stand dropdown change
-                objectStandIdSelect.onchange = (e) => {
-                    const selectedStandId = e.target.value;
-                    const selectedStand = availableStands.find(s => s.id == selectedStandId);
-                    if (selectedStand) {
-                        // Update object name for display on canvas and in object properties
-                        selectedObject.name = selectedStand.name; // Keep name property updated
-                        selectedObject.stand_name = selectedStand.name; // Update object in memory for drawing
-                        selectedObject.stand_id = parseInt(selectedStandId);
-                    } else {
-                        selectedObject.name = '';
-                        selectedObject.stand_name = '';
-                        selectedObject.stand_id = null;
-                    }
-                    draw();
-                };
+                // Call this to correctly set disabled/enabled states based on the above
+                updateStandNamingInputs(); 
 
             } else if (obj.type === 'trash_can') {
                 trashCanProperties.classList.remove('hidden');
-                objectNameInput.classList.remove('hidden'); // Trash cans can have a custom name
-                objectStandIdSelect.classList.add('hidden');
+                objectNameInput.classList.remove('hidden'); // Show generic name input for trash cans
                 objectNameInput.placeholder = 'Name (optional)'; // Adjust placeholder
+                objectNameInput.value = obj.name || ''; // Populate generic name
+                objectStandIdSelect.classList.add('hidden'); // Hide stand selection for trash cans
 
                 // Set selected trash can color dot
                 document.querySelectorAll('#trashCanProperties .color-dot').forEach(dot => {
@@ -877,9 +898,10 @@
 
             } else if (obj.type === 'power_outlet') {
                 powerOutletProperties.classList.remove('hidden');
-                objectNameInput.classList.remove('hidden'); // Power outlets can have a custom name
-                objectStandIdSelect.classList.add('hidden');
+                objectNameInput.classList.remove('hidden'); // Show generic name input for power outlets
                 objectNameInput.placeholder = 'Name (optional)'; // Adjust placeholder
+                objectNameInput.value = obj.name || ''; // Populate generic name
+                objectStandIdSelect.classList.add('hidden'); // Hide stand selection for power outlets
 
                 powerOutletLabelInput.value = obj.power_outlet_label || '';
             }
@@ -898,14 +920,16 @@
 
             const standColors = {}; // { color: [stand_name1, stand_name2], ... }
 
-            objects.filter(obj => obj.type === 'stand' && obj.stand_name && obj.color)
+            objects.filter(obj => obj.type === 'stand' && (obj.stand_name || obj.custom_stand_name) && obj.color)
                    .forEach(stand => {
+                        // Prioritize custom name for legend
+                        const nameToUse = stand.custom_stand_name || stand.stand_name; 
                         if (!standColors[stand.color]) {
                             standColors[stand.color] = [];
                         }
                         // Only add if not already present to avoid duplicates
-                        if (!standColors[stand.color].includes(stand.stand_name)) {
-                            standColors[stand.color].push(stand.stand_name);
+                        if (!standColors[stand.color].includes(nameToUse)) {
+                            standColors[stand.color].push(nameToUse);
                         }
                    });
 
@@ -1015,7 +1039,8 @@
                         color: obj.color,
                         trash_can_color: obj.trash_can_color,
                         power_outlet_label: obj.power_outlet_label,
-                        stand_id: obj.stand_id || null // Ensure null if not assigned
+                        stand_id: obj.stand_id, // Can be null now
+                        custom_stand_name: obj.custom_stand_name // Sende custom_stand_name
                     })
                 });
                 const data = await response.json();
@@ -1024,12 +1049,13 @@
                     if (!obj.id) { // If new object, update its ID
                         obj.id = data.object_id;
                     }
-                    draw();
-                    updateLegend();
                     // Re-fetch to get updated stand_name for newly associated stands
-                    // This is heavy, consider just updating `obj.stand_name` if `obj.stand_id` is set
-                    // For now, let's keep fetchActivePlan() to ensure consistency
+                    // and to ensure all data is consistent after saving.
+                    // This is important to get the `stand_name` from the backend join if `stand_id` was set.
+                    // And also to ensure `custom_stand_name` is correctly reflected.
                     fetchActivePlan(); 
+                    draw(); // Draw immediately for visual feedback
+                    updateLegend(); // Update legend with potentially new names
                 } else {
                     displayInlineMessage(data.message, 'error');
                 }
@@ -1097,18 +1123,9 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    // Update currentPlan object with new scale data
-                    currentPlan.scale_point1_x = scalePoints[0].x;
-                    currentPlan.scale_point1_y = scalePoints[0].y;
-                    currentPlan.scale_point2_x = scalePoints[1].x;
-                    currentPlan.scale_point2_y = scalePoints[1].y;
-                    currentPlan.scale_distance_meters = distanceMeters;
-                    currentPlan.width_px = floorPlanImage.naturalWidth; 
-                    currentPlan.height_px = floorPlanImage.naturalHeight;
-
-                    calculatePixelsPerMeter(); // Re-calculate to update the display based on newly saved data
                     displayInlineMessage(data.message, 'success');
-                    toggleScaleMode(false); // Exit scale mode after saving
+                    // Reload the page after successful save
+                    location.reload(); 
                 } else {
                     displayInlineMessage(data.message, 'error');
                 }
@@ -1342,6 +1359,7 @@
                 trash_can_color: 'yellow', // Default for trash can
                 power_outlet_label: '1', // Default for power outlet
                 stand_id: null,
+                custom_stand_name: null, // NEU: Initialisiere custom_stand_name
                 name: '', // Use 'name' for non-stand objects
                 stand_name: '' // For stands, synced with `stands` table
             };
@@ -1633,11 +1651,16 @@
                     selectedObject.width = parseFloat(standWidthInput.value) * (currentPlan.pixels_per_meter || 1);
                     selectedObject.height = parseFloat(standHeightInput.value) * (currentPlan.pixels_per_meter || 1);
                     selectedObject.color = standColorInput.value;
-                    selectedObject.stand_id = parseInt(objectStandIdSelect.value) || null;
-                    // Update name based on selected stand (or empty if none)
-                    selectedObject.stand_name = objectStandIdSelect.options[objectStandIdSelect.selectedIndex].text;
-                    if (objectStandIdSelect.value === "") { // If "Wählen Sie einen Stand..." is selected
-                        selectedObject.stand_name = '';
+                    
+                    if (useCustomStandNameCheckbox.checked) {
+                        selectedObject.stand_id = null; // Wenn benutzerdefinierter Name, dann keine Stand-ID
+                        selectedObject.custom_stand_name = standCustomNameInput.value;
+                    } else {
+                        selectedObject.stand_id = parseInt(objectStandIdSelect.value) || null;
+                        selectedObject.custom_stand_name = null; // Wenn Stand-ID, dann kein benutzerdefinierter Name
+                        // Update stand_name for drawing based on selected stand (only if a stand_id is selected)
+                        const selectedStand = availableStands.find(s => s.id == selectedObject.stand_id);
+                        selectedObject.stand_name = selectedStand ? selectedStand.name : '';
                     }
 
                 } else if (selectedObject.type === 'trash_can') {
@@ -1681,6 +1704,28 @@
                 header.classList.toggle('collapsed'); // Rotate arrow
             });
         });
+
+        // Event Listeners for custom stand name logic
+        useCustomStandNameCheckbox.addEventListener('change', updateStandNamingInputs);
+        
+        // This listener ensures that if a stand from the dropdown is selected, the custom name checkbox is unchecked.
+        objectStandIdSelect.addEventListener('change', () => {
+            if (objectStandIdSelect.value !== '') {
+                useCustomStandNameCheckbox.checked = false;
+            }
+            updateStandNamingInputs();
+        });
+        
+        // This listener ensures that if the custom name input is typed into, the custom name checkbox is checked.
+        standCustomNameInput.addEventListener('input', () => {
+            if (standCustomNameInput.value !== '') {
+                useCustomStandNameCheckbox.checked = true;
+            } else { // If input is cleared, uncheck the box
+                useCustomStandNameCheckbox.checked = false;
+            }
+            updateStandNamingInputs();
+        });
+
 
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', async () => {

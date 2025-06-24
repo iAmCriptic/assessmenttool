@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from flask import Blueprint, render_template, request, jsonify, send_from_directory, current_app, session, flash, url_for # url_for hinzugefügt
+from flask import Blueprint, render_template, request, jsonify, send_from_directory, current_app, session, flash, url_for
 from werkzeug.utils import secure_filename
 from decorators import role_required
 from db import get_db
@@ -94,14 +94,7 @@ def upload_floor_plan():
                     'name': filename,
                     'image_path': image_db_path, # Sende den DB-Pfad, url_for wird im Frontend verwendet
                     'image_url': url_for('map.serve_uploaded_plans', filename=filename), # Füge die tatsächliche URL hinzu
-                    'is_active': 1,
-                    'width_px': None, # Initial None, will be updated by JS on image load
-                    'height_px': None, # Initial None, will be updated by JS on image load
-                    'scale_point1_x': None,
-                    'scale_point1_y': None,
-                    'scale_point2_x': None,
-                    'scale_point2_y': None,
-                    'scale_distance_meters': None
+                    'is_active': 1
                 }
             }), 200
         except sqlite3.Error as e:
@@ -151,7 +144,7 @@ def get_active_plan():
             # Konvertiere image_path zu einer URL, die der Browser aufrufen kann
             plan_data['image_url'] = url_for('map.serve_uploaded_plans', filename=os.path.basename(plan_data['image_path']))
 
-            # Hole alle Objekte für diesen Plan
+            # Hole alle Objekte für diesen Plan, einschließlich stand_name und custom_stand_name
             objects_raw = cursor.execute("""
                 SELECT fpo.*, s.name as stand_name FROM floor_plan_objects fpo
                 LEFT JOIN stands s ON fpo.stand_id = s.id
@@ -192,6 +185,7 @@ def save_floor_plan_object():
     trash_can_color = data.get('trash_can_color')
     power_outlet_label = data.get('power_outlet_label')
     stand_id = data.get('stand_id')
+    custom_stand_name = data.get('custom_stand_name') # NEU: Benutzerdefinierten Namen erhalten
 
     if not all([plan_id, obj_type, x, y]):
         return jsonify({'success': False, 'message': 'Fehlende Daten für das Objekt.'}), 400
@@ -200,20 +194,22 @@ def save_floor_plan_object():
     cursor = db.cursor()
     try:
         if object_id:
-            # Update existing object
+            # Bestehendes Objekt aktualisieren
             cursor.execute("""
                 UPDATE floor_plan_objects
                 SET plan_id = ?, type = ?, x = ?, y = ?, width = ?, height = ?,
-                    color = ?, trash_can_color = ?, power_outlet_label = ?, stand_id = ?
+                    color = ?, trash_can_color = ?, power_outlet_label = ?, stand_id = ?,
+                    custom_stand_name = ? -- NEU: custom_stand_name aktualisieren
                 WHERE id = ?
-            """, (plan_id, obj_type, x, y, width, height, color, trash_can_color, power_outlet_label, stand_id, object_id))
+            """, (plan_id, obj_type, x, y, width, height, color, trash_can_color, power_outlet_label, stand_id,
+                  custom_stand_name, object_id)) # custom_stand_name hier hinzufügen
             message = 'Objekt erfolgreich aktualisiert.'
         else:
-            # Insert new object
+            # Neues Objekt einfügen
             cursor.execute("""
-                INSERT INTO floor_plan_objects (plan_id, type, x, y, width, height, color, trash_can_color, power_outlet_label, stand_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (plan_id, obj_type, x, y, width, height, color, trash_can_color, power_outlet_label, stand_id))
+                INSERT INTO floor_plan_objects (plan_id, type, x, y, width, height, color, trash_can_color, power_outlet_label, stand_id, custom_stand_name)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (plan_id, obj_type, x, y, width, height, color, trash_can_color, power_outlet_label, stand_id, custom_stand_name)) # custom_stand_name hier hinzufügen
             object_id = cursor.lastrowid
             message = 'Objekt erfolgreich hinzugefügt.'
         db.commit()
