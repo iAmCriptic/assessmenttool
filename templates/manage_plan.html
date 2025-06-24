@@ -948,21 +948,17 @@
 
                     floorPlanImage.src = currentPlan.image_url;
                     floorPlanImage.onload = () => {
-                        // After loading, save its true dimensions if not already saved
-                        if (!currentPlan.width_px || !currentPlan.height_px) {
-                            currentPlan.width_px = floorPlanImage.width;
-                            currentPlan.height_px = floorPlanImage.height;
-                            updatePlanScaleInDB(); // Save these dimensions to the DB
-                        }
-                        // canvas.width and canvas.height are now set in adjustCanvasSize based on container
-                        adjustCanvasSize(); // This will also redraw and handle initial pan/zoom
-
-                        // Restore scale points and calculate pixels per meter if available
+                        // Ensure currentPlan has width_px and height_px from the loaded image
+                        // This is crucial for scale calculations and object placement limits
+                        currentPlan.width_px = floorPlanImage.naturalWidth;
+                        currentPlan.height_px = floorPlanImage.naturalHeight;
+                        
+                        // If scale data exists in the fetched plan, apply it
                         if (currentPlan.scale_point1_x && currentPlan.scale_point2_x && currentPlan.scale_distance_meters) {
                             scalePoints = [{ x: currentPlan.scale_point1_x, y: currentPlan.scale_point1_y },
                                            { x: currentPlan.scale_point2_x, y: currentPlan.scale_point2_y }];
                             scaleDistanceInput.value = currentPlan.scale_distance_meters; // Set input field
-                            calculatePixelsPerMeter();
+                            calculatePixelsPerMeter(); // Calculate and display from fetched data
                         } else {
                              scalePoints = []; // Reset if no scale data
                              scalePoint1Display.textContent = '-';
@@ -970,7 +966,8 @@
                              pixelsPerMeterDisplay.textContent = 'Maßstab: Nicht definiert';
                              setScaleButton.disabled = true;
                         }
-                        
+
+                        adjustCanvasSize(); // This will also redraw and handle initial pan/zoom
                         draw();
                         updateLegend();
                         currentPlanInfo.textContent = `Aktueller Plan: ${currentPlan.name}`;
@@ -1068,8 +1065,12 @@
         }
 
         async function updatePlanScaleInDB() {
-            if (!currentPlan || scalePoints.length < 2 || !scaleDistanceInput.value) {
-                displayInlineMessage('Bitte definieren Sie beide Skalierungspunkte und die Distanz.', 'info');
+            if (!currentPlan) {
+                displayInlineMessage('Kein aktiver Plan zum Speichern der Skalierung vorhanden.', 'error');
+                return;
+            }
+            if (scalePoints.length < 2) {
+                displayInlineMessage('Bitte setzen Sie beide Skalierungspunkte.', 'info');
                 return;
             }
 
@@ -1096,16 +1097,18 @@
                 });
                 const data = await response.json();
                 if (data.success) {
+                    // Update currentPlan object with new scale data
                     currentPlan.scale_point1_x = scalePoints[0].x;
                     currentPlan.scale_point1_y = scalePoints[0].y;
                     currentPlan.scale_point2_x = scalePoints[1].x;
                     currentPlan.scale_point2_y = scalePoints[1].y;
                     currentPlan.scale_distance_meters = distanceMeters;
-                    currentPlan.width_px = floorPlanImage.naturalWidth; // Update currentPlan with saved dimensions
+                    currentPlan.width_px = floorPlanImage.naturalWidth; 
                     currentPlan.height_px = floorPlanImage.naturalHeight;
-                    calculatePixelsPerMeter();
+
+                    calculatePixelsPerMeter(); // Re-calculate to update the display based on newly saved data
                     displayInlineMessage(data.message, 'success');
-                    toggleScaleMode(); // Exit scale mode after saving
+                    toggleScaleMode(false); // Exit scale mode after saving
                 } else {
                     displayInlineMessage(data.message, 'error');
                 }
@@ -1118,16 +1121,27 @@
         // --- Scale Calculation ---
 
         function calculatePixelsPerMeter() {
-            if (scalePoints.length === 2 && currentPlan && currentPlan.scale_distance_meters > 0) {
+            const distanceMeters = parseFloat(scaleDistanceInput.value);
+
+            if (scalePoints.length === 2 && !isNaN(distanceMeters) && distanceMeters > 0) {
                 const px1 = scalePoints[0];
                 const px2 = scalePoints[1];
                 const pixelDistance = Math.sqrt(Math.pow(px2.x - px1.x, 2) + Math.pow(px2.y - px1.y, 2));
-                currentPlan.pixels_per_meter = pixelDistance / currentPlan.scale_distance_meters;
-                pixelsPerMeterDisplay.textContent = `Maßstab: ${currentPlan.pixels_per_meter.toFixed(2)} Pixel/Meter`;
+                const calculatedPixelsPerMeter = pixelDistance / distanceMeters;
+                
+                pixelsPerMeterDisplay.textContent = `Maßstab: ${calculatedPixelsPerMeter.toFixed(2)} Pixel/Meter`;
                 setScaleButton.disabled = false;
+                
+                // Store calculated pixels_per_meter in currentPlan for immediate use
+                if (currentPlan) {
+                    currentPlan.pixels_per_meter = calculatedPixelsPerMeter;
+                }
             } else {
                 pixelsPerMeterDisplay.textContent = 'Maßstab: Nicht definiert';
                 setScaleButton.disabled = true;
+                if (currentPlan) {
+                    currentPlan.pixels_per_meter = null; // Clear if not calculable
+                }
             }
         }
 
@@ -1189,13 +1203,12 @@
                     currentPlan = data.plan;
                     floorPlanImage.src = data.plan.image_url; // Use the URL provided by the backend
                     floorPlanImage.onload = () => {
-                        // After loading, save its true dimensions if not already saved
-                        if (!currentPlan.width_px || !currentPlan.height_px) {
-                            currentPlan.width_px = floorPlanImage.naturalWidth; // Use naturalWidth/Height
-                            currentPlan.height_px = floorPlanImage.naturalHeight;
-                            updatePlanScaleInDB(); // Save these dimensions to the DB
-                        }
-                        // canvas.width and canvas.height are now set in adjustCanvasSize based on container
+                        // Always save natural dimensions after loading a new image
+                        currentPlan.width_px = floorPlanImage.naturalWidth;
+                        currentPlan.height_px = floorPlanImage.naturalHeight;
+                        // No need to call updatePlanScaleInDB here just for dimensions,
+                        // it will be called when the scale is actually set/saved.
+                        
                         adjustCanvasSize(); // This will also redraw
                         objects = []; // Clear existing objects for a new plan
                         updateLegend();
@@ -1204,7 +1217,7 @@
                         scalePoint1Display.textContent = '-';
                         scalePoint2Display.textContent = '-';
                         scaleDistanceInput.value = '';
-                        calculatePixelsPerMeter();
+                        calculatePixelsPerMeter(); // Reset display
                         toggleScaleMode(false); // Ensure scale mode is off after upload
                     };
                      floorPlanImage.onerror = () => {
@@ -1254,8 +1267,10 @@
                 scalePoints = [];
                 scalePoint1Display.textContent = '-';
                 scalePoint2Display.textContent = '-';
-                calculatePixelsPerMeter(); // Update button state
+                scaleDistanceInput.value = ''; // Also clear the input field
+                calculatePixelsPerMeter(); // Update button state and display
             }
+            draw(); // Redraw canvas to clear scale points if mode is off
         }
 
 
@@ -1273,14 +1288,13 @@
                         scalePoint1Display.textContent = `(${mousePos.x.toFixed(0)}, ${mousePos.y.toFixed(0)})`;
                     } else if (scalePoints.length === 2) {
                         scalePoint2Display.textContent = `(${mousePos.x.toFixed(0)}, ${mousePos.y.toFixed(0)})`;
-                        calculatePixelsPerMeter();
                     }
                 } else {
                     scalePoints = [mousePos]; // Reset to first point
                     scalePoint1Display.textContent = `(${mousePos.x.toFixed(0)}, ${mousePos.y.toFixed(0)})`;
                     scalePoint2Display.textContent = '-';
-                    calculatePixelsPerMeter();
                 }
+                calculatePixelsPerMeter(); // Recalculate and update button state
                 draw();
             }
         });

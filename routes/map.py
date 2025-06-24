@@ -94,7 +94,14 @@ def upload_floor_plan():
                     'name': filename,
                     'image_path': image_db_path, # Sende den DB-Pfad, url_for wird im Frontend verwendet
                     'image_url': url_for('map.serve_uploaded_plans', filename=filename), # Füge die tatsächliche URL hinzu
-                    'is_active': 1
+                    'is_active': 1,
+                    'width_px': None, # Initial None, will be updated by JS on image load
+                    'height_px': None, # Initial None, will be updated by JS on image load
+                    'scale_point1_x': None,
+                    'scale_point1_y': None,
+                    'scale_point2_x': None,
+                    'scale_point2_y': None,
+                    'scale_distance_meters': None
                 }
             }), 200
         except sqlite3.Error as e:
