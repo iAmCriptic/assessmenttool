@@ -418,8 +418,8 @@
     {# Footer Information #}
     <div class="footer-info">
         <p>Erstellt von Enrico R. Matzke</p>
-        <p>Frontend Version 3.0.1 - Stable</p>
-        <p>Backend Version 2.5.3 - Stable</p>
+        <p id="frontendVersion">Frontend Version: Lädt...</p>
+        <p id="backendVersion">Backend Version: Lädt...</p>
     </div>
 
     {# Android App Popup #}
@@ -469,6 +469,11 @@
             const androidAppPopup = document.getElementById('androidAppPopup');
             const openAppButton = document.getElementById('openAppButton');
             const closeAppPopupButton = document.getElementById('closeAppPopupButton');
+
+            // NEW: Version elements
+            const frontendVersionElem = document.getElementById('frontendVersion');
+            const backendVersionElem = document.getElementById('backendVersion');
+
 
             // Funktion zum Abrufen und Anwenden der App-Einstellungen
             async function applyAppSettings() {
@@ -573,8 +578,32 @@
                 }
             }
 
+            // NEW: Function to fetch and apply version information
+            async function fetchAndApplyVersions() {
+                try {
+                    const response = await fetch('{{ url_for("general.api_versions") }}');
+                    if (!response.ok) {
+                        console.error('Fehler beim Abrufen der Versionen: HTTP-Status', response.status);
+                        return;
+                    }
+                    const result = await response.json();
+                    if (result.success) {
+                        frontendVersionElem.textContent = `Frontend Version: ${result.frontend_version}`;
+                        backendVersionElem.textContent = `Backend Version: ${result.backend_version}`;
+                    } else {
+                        console.error('Fehler beim Laden der Versionen:', result.message);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Abrufen/Parsen der Versionen:', error);
+                }
+            }
+
+
             // Initiales Anwenden der App-Einstellungen
             await applyAppSettings();
+            // NEW: Initiales Laden und Anwenden der Versionen
+            await fetchAndApplyVersions();
+
 
             // Dark Mode Toggle Funktionalität
             darkModeToggle.addEventListener('click', async () => {

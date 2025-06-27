@@ -200,6 +200,22 @@
         .dark label {
             color: #e2e8f0; /* Hellerer Text für Labels im Dark Mode */
         }
+        /* Spinner für Ladeanzeige */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        .dark .spinner {
+             border-left-color: #000000;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="{{ 'dark' if dark_mode_enabled else '' }}">
@@ -294,6 +310,30 @@
             </div>
         </form>
 
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Anwendungs-Updates</h2>
+            <div class="flex items-center justify-between">
+                <button id="checkForUpdatesButton"
+                        class="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50
+                               transition duration-200 ease-in-out transform hover:scale-105 w-full">
+                    <span id="checkForUpdatesButtonText">Auf Updates prüfen</span>
+                    <div id="checkForUpdatesSpinner" class="spinner ml-2 hidden"></div>
+                </button>
+            </div>
+            <div id="updateStatus" class="mt-4 text-center text-sm">
+                <!-- Update-Status wird hier angezeigt -->
+            </div>
+            <div id="updateActions" class="mt-4 flex justify-center gap-4 hidden">
+                <button id="performUpdateButton"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                               transition duration-200 ease-in-out transform hover:scale-105">
+                    Update durchführen
+                </button>
+            </div>
+        </div>
+
         <div class="mt-4 text-center">
             <a href="{{ url_for('general.home') }}"
                class="text-blue-600 hover:text-blue-800 font-semibold transition duration-200 ease-in-out">
@@ -343,6 +383,18 @@
             const darkModeToggle = document.getElementById('darkModeToggle'); // Get dark mode toggle button
             const backButton = document.getElementById('backButton'); // Get back button
 
+            // Update Check elements
+            const checkForUpdatesButton = document.getElementById('checkForUpdatesButton');
+            const checkForUpdatesButtonText = document.getElementById('checkForUpdatesButtonText');
+            const checkForUpdatesSpinner = document.getElementById('checkForUpdatesSpinner');
+            const updateStatus = document.getElementById('updateStatus');
+            const updateActions = document.getElementById('updateActions');
+            const performUpdateButton = document.getElementById('performUpdateButton');
+
+            let latestDownloadUrl = null;
+            let latestVersionTag = null;
+
+
             // Function to fetch and populate current settings
             async function fetchAndPopulateSettings() {
                 try {
@@ -363,13 +415,13 @@
                         darkBgGradientColor1.value = settings.dark_bg_gradient_color1 || '#8B0000'; // NEW
                         darkBgGradientColor2.value = settings.dark_bg_gradient_color2 || '#00008B'; // NEW
                         
-                        if (settings.logo_path) {
-                            currentLogoPreview.src = settings.logo_path;
+                        if (settings.logo_url) { // Use logo_url directly
+                            currentLogoPreview.src = settings.logo_url;
                             currentLogoPreview.classList.remove('hidden');
-                            faviconLink.href = settings.logo_path; // Update favicon
+                            faviconLink.href = settings.logo_url; // Update favicon
                         } else {
                             currentLogoPreview.classList.add('hidden');
-                            faviconLink.href = '{{ url_for("static", filename="img/logo_V2.png") }}'; // Fallback
+                            faviconLink.href = '{{ url_for("general.static_files", filename="img/logo_V2.png") }}'; // Fallback
                         }
 
                         // Apply background gradient to this page based on current dark mode state of the body
@@ -505,6 +557,100 @@
             backButton.addEventListener('click', () => {
                 window.location.href = '{{ url_for("general.home") }}';
             });
+
+            // Updateprüfung und -ausführung
+            checkForUpdatesButton.addEventListener('click', async () => {
+                checkForUpdatesButton.disabled = true; // Button deaktivieren
+                checkForUpdatesButtonText.textContent = 'Prüfe...';
+                checkForUpdatesSpinner.classList.remove('hidden');
+                updateStatus.textContent = ''; // Status zurücksetzen
+                updateActions.classList.add('hidden'); // Buttons ausblenden
+
+                try {
+                    const response = await fetch('/admin/check_for_updates');
+                    const result = await response.json();
+
+                    if (result.success) {
+                        if (result.new_version_available) {
+                            updateStatus.innerHTML = `Neue Version verfügbar: <span class="font-bold">${result.latest_version}</span> (Deine Version: ${result.current_version}).`;
+                            updateStatus.classList.remove('text-green-600', 'text-red-600');
+                            updateStatus.classList.add('text-yellow-600');
+                            updateActions.classList.remove('hidden');
+                            latestDownloadUrl = result.download_url;
+                            latestVersionTag = result.latest_version;
+                        } else {
+                            updateStatus.innerHTML = `Du verwendest bereits die neueste Version: <span class="font-bold">${result.current_version}</span>.`;
+                            updateStatus.classList.remove('text-yellow-600', 'text-red-600');
+                            updateStatus.classList.add('text-green-600');
+                            updateActions.classList.add('hidden');
+                        }
+                        displayInlineMessage(result.message, 'info');
+                    } else {
+                        updateStatus.textContent = result.message || 'Fehler beim Prüfen auf Updates.';
+                        updateStatus.classList.remove('text-green-600', 'text-yellow-600');
+                        updateStatus.classList.add('text-red-600');
+                        displayInlineMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Aufrufen der Update-Prüfung:', error);
+                    updateStatus.textContent = 'Ein unerwarteter Fehler ist beim Prüfen auf Updates aufgetreten.';
+                    updateStatus.classList.remove('text-green-600', 'text-yellow-600');
+                    updateStatus.classList.add('text-red-600');
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Prüfen auf Updates aufgetreten.', 'error');
+                } finally {
+                    checkForUpdatesButton.disabled = false; // Button wieder aktivieren
+                    checkForUpdatesButtonText.textContent = 'Auf Updates prüfen';
+                    checkForUpdatesSpinner.classList.add('hidden');
+                }
+            });
+
+            performUpdateButton.addEventListener('click', async () => {
+                if (!latestDownloadUrl || !latestVersionTag) {
+                    displayInlineMessage('Kein Update zum Ausführen gefunden. Bitte zuerst auf Updates prüfen.', 'error');
+                    return;
+                }
+
+                performUpdateButton.disabled = true;
+                performUpdateButton.textContent = 'Update wird durchgeführt...';
+                updateStatus.textContent = 'Update wird heruntergeladen und entpackt...';
+                updateStatus.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
+                updateStatus.classList.add('text-info'); // Info-Stil für laufendes Update
+
+                try {
+                    const response = await fetch('/admin/perform_update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            download_url: latestDownloadUrl,
+                            latest_version: latestVersionTag
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        displayInlineMessage(result.message, 'success');
+                        updateStatus.textContent = result.message;
+                        updateStatus.classList.remove('text-info', 'text-red-600');
+                        updateStatus.classList.add('text-green-600');
+                        updateActions.classList.add('hidden'); // Buttons ausblenden nach erfolgreichem Download
+                    } else {
+                        displayInlineMessage(result.message, 'error');
+                        updateStatus.textContent = result.message;
+                        updateStatus.classList.remove('text-info', 'text-green-600');
+                        updateStatus.classList.add('text-red-600');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Ausführen des Updates:', error);
+                    displayInlineMessage('Ein unerwarteter Fehler ist beim Ausführen des Updates aufgetreten.', 'error');
+                    updateStatus.textContent = 'Ein unerwarteter Fehler ist beim Ausführen des Updates aufgetreten.';
+                    updateStatus.classList.remove('text-info', 'text-green-600');
+                    updateStatus.classList.add('text-red-600');
+                } finally {
+                    performUpdateButton.disabled = false;
+                    performUpdateButton.textContent = 'Update durchführen'; // Text zurücksetzen
+                }
+            });
+
 
             // Initial fetch of settings when the page loads
             await fetchAndPopulateSettings();

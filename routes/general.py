@@ -3,6 +3,9 @@ from flask import Blueprint, render_template, session, jsonify, redirect, url_fo
 from decorators import role_required
 from db import get_db
 import os
+# Importiere die zentrale Versionskonfiguration
+from config_version import FRONTEND_VERSION, BACKEND_VERSION
+
 
 general_bp = Blueprint('general', __name__)
 
@@ -86,8 +89,8 @@ def manage_list_page():
 @role_required(['Administrator'])
 def api_reset_data():
     """
-    Setzt verschiedene Daten in der Datenbank zurück, basierend auf der 'action'.
-    Benötigt Administrator-Rolle.
+    Sets various data in the database back, based on the 'action'.
+    Requires Administrator role.
     """
     db = get_db()
     cursor = db.cursor()
@@ -95,33 +98,45 @@ def api_reset_data():
     action = data.get('action')
 
     if not action:
-        return jsonify({'success': False, 'message': 'Aktion nicht angegeben.'}), 400
+        return jsonify({'success': False, 'message': 'Action not specified.'}), 400
 
     try:
         if action == 'reset_ranking':
-            # Lösche alle Einträge aus evaluation_scores und evaluations
+            # Delete all entries from evaluation_scores and evaluations
             cursor.execute("DELETE FROM evaluation_scores")
             cursor.execute("DELETE FROM evaluations")
             db.commit()
-            return jsonify({'success': True, 'message': 'Rangliste und alle Bewertungen erfolgreich zurückgesetzt!'})
+            return jsonify({'success': True, 'message': 'Ranking and all evaluations successfully reset!'})
         elif action == 'reset_room_inspections':
-            # Lösche alle Einträge aus room_inspections
+            # Delete all entries from room_inspections
             cursor.execute("DELETE FROM room_inspections")
             db.commit()
-            return jsonify({'success': True, 'message': 'Alle Rauminspektionen erfolgreich zurückgesetzt!'})
+            return jsonify({'success': True, 'message': 'All room inspections successfully reset!'})
         elif action == 'reset_warnings':
-            # Lösche alle Einträge aus warnings
+            # Delete all entries from warnings
             cursor.execute("DELETE FROM warnings")
             db.commit()
-            return jsonify({'success': True, 'message': 'Alle Verwarnungen erfolgreich zurückgesetzt!'})
+            return jsonify({'success': True, 'message': 'All warnings successfully reset!'})
         else:
-            return jsonify({'success': False, 'message': 'Ungültige Aktion.'}), 400
+            return jsonify({'success': False, 'message': 'Invalid action.'}), 400
     except sqlite3.Error as e:
         db.rollback()
         print(f"Database error during reset action {action}: {e}")
-        return jsonify({'success': False, 'message': f'Fehler beim Zurücksetzen der Daten: {e}'}), 500
+        return jsonify({'success': False, 'message': f'Error resetting data: {e}'}), 500
     except Exception as e:
         db.rollback()
         print(f"An unexpected error occurred during reset action {action}: {e}")
-        return jsonify({'success': False, 'message': f'Ein unerwarteter Fehler ist aufgetreten: {e}'}), 500
+        return jsonify({'success': False, 'message': f'An unexpected error occurred: {e}'}), 500
+
+
+@general_bp.route('/api/versions', methods=['GET'])
+def api_versions():
+    """
+    Returns frontend and backend version information as JSON.
+    """
+    return jsonify({
+        'success': True,
+        'frontend_version': FRONTEND_VERSION,
+        'backend_version': BACKEND_VERSION
+    })
 

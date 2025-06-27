@@ -11,3 +11,9 @@ class Config:
     # Stelle sicher, dass der Upload-Ordner existiert
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
+
+    # NEU: Pfade zu den Update-Skripten
+    # Diese Pfade sollten absolut sein oder relativ zum Ausführungsverzeichnis der App
+    LINUX_UPDATE_SCRIPT = os.path.join(os.getcwd(), 'update_and_restart.sh')
+    WINDOWS_UPDATE_SCRIPT = os.path.join(os.getcwd(), 'update_and_restart.bat')
+
