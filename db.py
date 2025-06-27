@@ -1,5 +1,5 @@
 import sqlite3
-from flask import g, current_app
+from flask import g, current_app 
 import datetime
 
 # Importiere Konfiguration
@@ -44,7 +44,7 @@ def init_db():
         )
     """)
 
-    # Aktualisierte Benutzer-Tabelle (ohne direkte role_id)
+    # Aktualisierte Benutzer-Tabelle (mit display_name)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +74,7 @@ def init_db():
         )
     """)
 
-    # Aktualisierte Tabelle für Stände (mit room_id)
+    # Aktualisierte Tabelle für Stände (mit room_id und description, wie von stands.py erwartet)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS stands (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,8 +189,10 @@ def init_db():
             height REAL,
             color TEXT, -- Für Stände (Hex-Code)
             trash_can_color TEXT, -- Für Mülleimer ('yellow', 'blue', 'black')
+            wc_label TEXT, -- Für WC (z.B. 'WC')      
             power_outlet_label TEXT, -- Für Steckdosen (die Zahl, z.B. '1')
             stand_id INTEGER, -- Verknüpfung zum stands-Tabelle, wenn Typ 'stand'
+            custom_stand_name TEXT, -- NEU: Spalte für benutzerdefinierten Namen
             FOREIGN KEY (plan_id) REFERENCES floor_plans(id) ON DELETE CASCADE,
             FOREIGN KEY (stand_id) REFERENCES stands(id) ON DELETE SET NULL
         )
@@ -251,8 +253,16 @@ def add_initial_data():
         'bg_gradient_color2': '#a7d9f7',
         'dark_bg_gradient_color1': '#8B0000', # NEU: Standard-Dark-Mode-Verlaufsfarbe 1
         'dark_bg_gradient_color2': '#00008B', # NEU: Standard-Dark-Mode-Verlaufsfarbe 2
-        'logo_path': 'static/img/logo_V2.png' # Geändert in relativen Pfad
+        'logo_url': '/static/img/logo_V2.png', # Direkter relativer Pfad
+        'favicon_url': '/static/img/logo_V2.png' # Direkter relativer Pfad
     }
-    for key, value in default_settings.items():
-        cursor.execute("INSERT OR IGNORE INTO app_settings (setting_key, setting_value) VALUES (?, ?)", (key, value))
+
+    for key, default_value in default_settings.items():
+        # Überprüfen, ob der Schlüssel bereits existiert
+        setting = cursor.execute("SELECT setting_value FROM app_settings WHERE setting_key = ?", (key,)).fetchone()
+        if setting is None:
+            # Füge die Einstellung nur hinzu, wenn sie noch nicht existiert
+            cursor.execute("INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)", (key, default_value))
     db.commit()
+
+    # Die Abschnitte zum Hinzufügen von Beispiel-Ständen, -Räumen und -Kriterien wurden entfernt.
