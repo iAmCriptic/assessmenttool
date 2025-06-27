@@ -1,0 +1,5 @@
+ 
+--- Update-Skript gestartet: 27.06.2025  9:14:37,80 --- 
+Neuer App-Pfad: C:\Users\ermat\GIT\Sommerfesttool\Sommerfesttool\temp_update\iAmCriptic-assessmenttool-7cdfe8e/ 
+Aktueller App-Root: C:\Users\ermat\GIT\Sommerfesttool\Sommerfesttool 
+Warte 5 Sekunden, bevor der Update-Prozess beginnt... 

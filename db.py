@@ -44,7 +44,8 @@ def _get_current_schema_version(cursor):
 
 def _record_schema_version(cursor, version):
     """Records an applied schema version."""
-    cursor.execute("INSERT INTO schema_versions (version) VALUES (?)", (version,))
+    # NEU: INSERT OR IGNORE, um UNIQUE constraint failed zu verhindern, wenn Version bereits existiert
+    cursor.execute("INSERT OR IGNORE INTO schema_versions (version) VALUES (?)", (version,))
 
 def migrate_to_1_0_1(cursor):
     """
@@ -57,9 +58,10 @@ def migrate_to_1_0_1(cursor):
         if 'is_active' not in columns:
             cursor.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
             print("Migration 1.0.1: Added 'is_active' column to users table.")
+            return True # Rückgabe True nur, wenn die Änderung tatsächlich vorgenommen wurde
         else:
             print("Migration 1.0.1: 'is_active' column already exists in users table.")
-        return True
+            return True # Rückgabe True, da der gewünschte Zustand erreicht ist
     except sqlite3.Error as e:
         print(f"Error during migration 1.0.1: {e}")
         return False
@@ -74,9 +76,10 @@ def migrate_to_1_0_2(cursor):
         if 'contact_email' not in columns:
             cursor.execute("ALTER TABLE stands ADD COLUMN contact_email TEXT")
             print("Migration 1.0.2: Added 'contact_email' column to stands table.")
+            return True # Rückgabe True nur, wenn die Änderung tatsächlich vorgenommen wurde
         else:
             print("Migration 1.0.2: 'contact_email' column already exists in stands table.")
-        return True
+            return True # Rückgabe True, da der gewünschte Zustand erreicht ist
     except sqlite3.Error as e:
         print(f"Error during migration 1.0.2: {e}")
         return False
@@ -92,22 +95,30 @@ MIGRATIONS = {
 def apply_migrations(db):
     """Applies all pending schema migrations."""
     cursor = db.cursor()
-    current_version = _get_current_schema_version(cursor)
+    current_version_str = _get_current_schema_version(cursor)
     
-    print(f"Current database schema version: {current_version}")
+    # Convert version string to a comparable tuple of integers
+    def parse_version(version_str):
+        return tuple(map(int, version_str.split('.')))
+
+    current_version = parse_version(current_version_str)
     
-    sorted_versions = sorted(MIGRATIONS.keys(), key=lambda v: [int(part) for part in v.split('.')])
+    print(f"Current database schema version: {current_version_str}")
     
-    for version in sorted_versions:
-        if version > current_version: # Simple string comparison for versions like X.Y.Z
-            print(f"Applying migration {version}...")
-            if MIGRATIONS[version](cursor):
-                _record_schema_version(cursor, version)
+    # Sort versions using the same parsing logic
+    sorted_versions = sorted(MIGRATIONS.keys(), key=parse_version)
+    
+    for version_str in sorted_versions:
+        migration_version = parse_version(version_str)
+        if migration_version > current_version:
+            print(f"Applying migration {version_str}...")
+            if MIGRATIONS[version_str](cursor):
+                _record_schema_version(cursor, version_str)
                 db.commit()
-                print(f"Migration {version} applied successfully.")
+                print(f"Migration {version_str} applied successfully.")
             else:
                 db.rollback()
-                print(f"Migration {version} failed. Rolling back changes.")
+                print(f"Migration {version_str} failed. Rolling back changes.")
                 return False # Stop if a migration fails
     print("All migrations applied or no new migrations found.")
     return True
