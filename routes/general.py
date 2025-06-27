@@ -80,3 +80,48 @@ def manage_list_page():
     # Korrektur: Verwende render_template, da manage_list.html Jinja2-Variablen enthalten wird.
     dark_mode_enabled = session.get('dark_mode_enabled', False)
     return render_template('manage_list.html', dark_mode_enabled=dark_mode_enabled)
+
+# NEUE API-ROUTE FÜR ZURÜCKSETZEN VON DATEN
+@general_bp.route('/api/reset_data', methods=['POST'])
+@role_required(['Administrator'])
+def api_reset_data():
+    """
+    Setzt verschiedene Daten in der Datenbank zurück, basierend auf der 'action'.
+    Benötigt Administrator-Rolle.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    data = request.get_json()
+    action = data.get('action')
+
+    if not action:
+        return jsonify({'success': False, 'message': 'Aktion nicht angegeben.'}), 400
+
+    try:
+        if action == 'reset_ranking':
+            # Lösche alle Einträge aus evaluation_scores und evaluations
+            cursor.execute("DELETE FROM evaluation_scores")
+            cursor.execute("DELETE FROM evaluations")
+            db.commit()
+            return jsonify({'success': True, 'message': 'Rangliste und alle Bewertungen erfolgreich zurückgesetzt!'})
+        elif action == 'reset_room_inspections':
+            # Lösche alle Einträge aus room_inspections
+            cursor.execute("DELETE FROM room_inspections")
+            db.commit()
+            return jsonify({'success': True, 'message': 'Alle Rauminspektionen erfolgreich zurückgesetzt!'})
+        elif action == 'reset_warnings':
+            # Lösche alle Einträge aus warnings
+            cursor.execute("DELETE FROM warnings")
+            db.commit()
+            return jsonify({'success': True, 'message': 'Alle Verwarnungen erfolgreich zurückgesetzt!'})
+        else:
+            return jsonify({'success': False, 'message': 'Ungültige Aktion.'}), 400
+    except sqlite3.Error as e:
+        db.rollback()
+        print(f"Database error during reset action {action}: {e}")
+        return jsonify({'success': False, 'message': f'Fehler beim Zurücksetzen der Daten: {e}'}), 500
+    except Exception as e:
+        db.rollback()
+        print(f"An unexpected error occurred during reset action {action}: {e}")
+        return jsonify({'success': False, 'message': f'Ein unerwarteter Fehler ist aufgetreten: {e}'}), 500
+

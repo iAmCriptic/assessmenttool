@@ -24,7 +24,13 @@ def upload_stands_excel():
         return jsonify({'success': False, 'message': 'Keine Datei ausgewählt.'}), 400
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        
+        # Sicherstellen, dass der Upload-Ordner existiert
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder) # Erstellt den Ordner, falls er nicht existiert
+        
+        filepath = os.path.join(upload_folder, filename)
         file.save(filepath)
 
         db = get_db()
@@ -106,7 +112,13 @@ def upload_users_excel():
         return jsonify({'success': False, 'message': 'Keine Datei ausgewählt.'}), 400
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        
+        # Sicherstellen, dass der Upload-Ordner existiert
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+        
+        filepath = os.path.join(upload_folder, filename)
         file.save(filepath)
 
         db = get_db()
@@ -200,7 +212,13 @@ def upload_criteria_excel():
         return jsonify({'success': False, 'message': 'Keine Datei ausgewählt.'}), 400
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        
+        # Sicherstellen, dass der Upload-Ordner existiert
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+        
+        filepath = os.path.join(upload_folder, filename)
         file.save(filepath)
 
         db = get_db()
@@ -250,3 +268,4 @@ def upload_criteria_excel():
         finally:
             os.remove(filepath)
     return jsonify({'success': False, 'message': 'Ungültiger Dateityp.'}), 400
+
