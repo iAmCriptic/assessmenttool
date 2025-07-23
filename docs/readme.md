@@ -63,6 +63,18 @@ You'll need the dependencies from   ```requirements.txt``` as well as Python to 
    ```sh
    python app.py
    ```
+5. Open Web-Interface and Setup the Admin Account
+   ```sh
+   Default credentials
+
+   username:
+   admin
+
+   password:
+   password
+
+   Note: Case sensitivity plays a role in the username and password
+   ```
 ## Usage
 
 This assessment tool can be used for important components of a summer festival or similar events. It allows you to rate stands, inspect rooms, or issue warnings to stands that don't follow the rules.
