@@ -120,6 +120,31 @@ def init_db():
         )
     ''')
 
+    # Besucherbewertungen (öffentlich)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS visitor_evaluations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            stand_id INTEGER NOT NULL,
+            visitor_token_hash TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            ip_hash TEXT,
+            ua_hash TEXT,
+            FOREIGN KEY (stand_id) REFERENCES stands(id) ON DELETE CASCADE,
+            UNIQUE(stand_id, visitor_token_hash)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS visitor_evaluation_scores (
+            visitor_evaluation_id INTEGER NOT NULL,
+            criterion_id INTEGER NOT NULL,
+            score INTEGER NOT NULL,
+            PRIMARY KEY (visitor_evaluation_id, criterion_id),
+            FOREIGN KEY (visitor_evaluation_id) REFERENCES visitor_evaluations(id) ON DELETE CASCADE,
+            FOREIGN KEY (criterion_id) REFERENCES criteria(id) ON DELETE CASCADE
+        )
+    ''')
+
     # Tabelle für Rauminspektionen
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS room_inspections (
@@ -254,7 +279,9 @@ def add_initial_data():
         'dark_bg_gradient_color1': '#8B0000', # NEU: Standard-Dark-Mode-Verlaufsfarbe 1
         'dark_bg_gradient_color2': '#00008B', # NEU: Standard-Dark-Mode-Verlaufsfarbe 2
         'logo_url': '/static/img/logo_V2.png', # Direkter relativer Pfad
-        'favicon_url': '/static/img/logo_V2.png' # Direkter relativer Pfad
+        'favicon_url': '/static/img/logo_V2.png', # Direkter relativer Pfad
+        'ranking_sort_mode': 'total',
+        'ranking_active_mode': 'standard'
     }
 
     for key, default_value in default_settings.items():

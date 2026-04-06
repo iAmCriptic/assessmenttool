@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Besucherbewertung</title>
+    <link id="faviconLink" href="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" rel="icon" type="image/vnd.microsoft.icon">
+    <link rel="manifest" href="{{ url_for('general.static_files', filename='manifest.json') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .main-card {
+            background-color: #ffffff;
+            color: #1f2937;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .dark .main-card {
+            background-color: #000000;
+            color: #e2e8f0;
+        }
+        .dark .text-gray-700,
+        .dark .text-gray-600 {
+            color: #cbd5e0;
+        }
+        .dark #standSelect {
+            background-color: #1c1c1c;
+            color: #ffffff;
+            border-color: #555555;
+        }
+    </style>
+</head>
+<body class="{{ 'dark' if dark_mode_enabled else '' }}">
+    <div class="main-card w-full max-w-md rounded-xl shadow-md p-6 border border-gray-200">
+        <h1 class="text-2xl font-bold text-center mb-2">Besucherbewertung</h1>
+        <p class="text-center text-gray-600 mb-4">Stand wählen und eine Punktzahl von 1 bis 10 antippen.</p>
+
+        <div class="mb-4">
+            <label for="standSelect" class="block text-sm font-medium text-gray-700">Stand</label>
+            <select id="standSelect" class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2"></select>
+        </div>
+
+        <div class="grid grid-cols-5 gap-2 mb-4" id="scoreButtons"></div>
+
+        <p id="statusText" class="text-center text-sm text-gray-700"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const standSelect = document.getElementById('standSelect');
+            const scoreButtons = document.getElementById('scoreButtons');
+            const statusText = document.getElementById('statusText');
+            const body = document.body;
+            const faviconLink = document.getElementById('faviconLink');
+
+            function setStatus(message, isError = false) {
+                statusText.textContent = message;
+                statusText.className = isError ? 'text-center text-sm text-red-600' : 'text-center text-sm text-green-600';
+            }
+
+            async function applyAppSettings() {
+                try {
+                    const response = await fetch('/api/admin_settings');
+                    const result = await response.json();
+                    if (!result.success) return;
+                    const settings = result.settings || {};
+                    const isDark = body.classList.contains('dark');
+
+                    if (isDark && settings.dark_bg_gradient_color1 && settings.dark_bg_gradient_color2) {
+                        body.style.background = `linear-gradient(to bottom right, ${settings.dark_bg_gradient_color1}, ${settings.dark_bg_gradient_color2})`;
+                    } else if (settings.bg_gradient_color1 && settings.bg_gradient_color2) {
+                        body.style.background = `linear-gradient(to bottom right, ${settings.bg_gradient_color1}, ${settings.bg_gradient_color2})`;
+                    } else {
+                        body.style.background = 'linear-gradient(to bottom right, #ffb3c1, #a7d9f7)';
+                    }
+
+                    if (settings.logo_url) {
+                        faviconLink.href = settings.logo_url;
+                    }
+                } catch (error) {
+                    body.style.background = 'linear-gradient(to bottom right, #ffb3c1, #a7d9f7)';
+                }
+            }
+
+            await applyAppSettings();
+
+            try {
+                const response = await fetch('/api/visitor_evaluate_initial_data');
+                const result = await response.json();
+                if (!result.success) throw new Error(result.message || 'Initialdaten konnten nicht geladen werden.');
+
+                standSelect.innerHTML = result.stands.map(stand =>
+                    `<option value="${stand.id}">${stand.name}</option>`
+                ).join('');
+            } catch (error) {
+                setStatus(error.message, true);
+            }
+
+            for (let score = 1; score <= 10; score += 1) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = score;
+                button.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg text-xl';
+                button.addEventListener('click', async () => {
+                    const standId = standSelect.value;
+                    if (!standId) {
+                        setStatus('Bitte zuerst einen Stand wählen.', true);
+                        return;
+                    }
+
+                    try {
+                        const submitResponse = await fetch('/api/visitor/evaluate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ stand_id: Number(standId), score })
+                        });
+                        const submitResult = await submitResponse.json();
+                        if (!submitResponse.ok || !submitResult.success) {
+                            throw new Error(submitResult.message || 'Bewertung konnte nicht gespeichert werden.');
+                        }
+                        setStatus(`Danke! ${submitResult.message}`);
+                    } catch (error) {
+                        setStatus(error.message, true);
+                    }
+                });
+                scoreButtons.appendChild(button);
+            }
+        });
+    </script>
+</body>
+</html>

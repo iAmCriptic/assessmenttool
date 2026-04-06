@@ -1,11 +1,25 @@
 import sqlite3
-from flask import Blueprint, request, jsonify, session, current_app, render_template, url_for
+import hashlib
+import uuid
+from flask import Blueprint, request, jsonify, session, current_app, render_template, url_for, make_response
 from db import get_db
 from decorators import role_required
 import datetime
 from datetime import timezone # Importiere timezone
 
 evaluations_bp = Blueprint('evaluations', __name__)
+
+
+def _get_or_create_visitor_cookie_value():
+    visitor_id = request.cookies.get('visitor_id')
+    if visitor_id:
+        return visitor_id, False
+    return str(uuid.uuid4()), True
+
+
+def _hash_visitor_token(raw_token):
+    secret = current_app.config.get('SECRET_KEY', 'assessmenttool-default-secret')
+    return hashlib.sha256(f"{secret}|{raw_token}".encode('utf-8')).hexdigest()
 
 @evaluations_bp.route('/evaluate', methods=['GET', 'POST'])
 @role_required(['Administrator', 'Bewerter'])
@@ -298,6 +312,31 @@ def render_print_evaluation_template(stand_id):
     dark_mode_enabled = session.get('dark_mode_enabled', False)
     return render_template('print_evaluation_template.html', **template_data, dark_mode_enabled=dark_mode_enabled)
 
+@evaluations_bp.route('/print_evaluation_template_blank')
+@role_required(['Administrator', 'Bewerter', 'Betrachter', 'Inspektor', 'Verwarner'])
+def render_print_evaluation_template_blank():
+    """Rendert ein standunabhängiges leeres Bewertungsformular direkt zum Drucken."""
+    db = get_db()
+    cursor = db.cursor()
+
+    settings = cursor.execute("SELECT setting_key, setting_value FROM app_settings WHERE setting_key = 'logo_path'").fetchone()
+    logo_url = url_for('general.static_files', filename='img/logo_V2.png')
+    if settings and settings['setting_value']:
+        logo_url = url_for('general.static_files', filename=settings['setting_value'])
+
+    criteria_data = [dict(row) for row in cursor.execute("SELECT id, name, max_score, description FROM criteria ORDER BY id").fetchall()]
+    total_max_possible_score = sum(c['max_score'] for c in criteria_data)
+
+    dark_mode_enabled = session.get('dark_mode_enabled', False)
+    return render_template(
+        'print_evaluation_template.html',
+        stand=None,
+        criteria=criteria_data,
+        total_max_possible_score=total_max_possible_score,
+        logo_url=logo_url,
+        dark_mode_enabled=dark_mode_enabled
+    )
+
 # Bestehende API-Route für die Daten der leeren Bewertungsbogen-Vorlage
 @evaluations_bp.route('/api/blank_evaluations', methods=['GET'])
 @role_required(['Administrator', 'Bewerter', 'Inspektor', 'Verwarner'])
@@ -390,3 +429,111 @@ def api_evaluation_details(evaluation_id):
     except Exception as e:
         print(f"An unexpected error occurred in api_evaluation_details: {e}")
         return jsonify({'success': False, 'message': f'Ein unerwarteter Fehler ist aufgetreten: {e}'}), 500
+
+
+@evaluations_bp.route('/visitor/rate', methods=['GET'])
+def visitor_rate_page():
+    """Öffentliche mobile Bewertungsseite für Besucher."""
+    dark_mode_enabled = session.get('dark_mode_enabled', False)
+    visitor_id, created = _get_or_create_visitor_cookie_value()
+    response = make_response(render_template('visitor_rate.html', dark_mode_enabled=dark_mode_enabled))
+    if created:
+        response.set_cookie('visitor_id', visitor_id, max_age=60 * 60 * 24 * 365, samesite='Lax', secure=False, httponly=True)
+    return response
+
+
+@evaluations_bp.route('/api/visitor_evaluate_initial_data', methods=['GET'])
+def api_visitor_evaluate_initial_data():
+    """Öffentliche Initialdaten für Besucherbewertung."""
+    db = get_db()
+    cursor = db.cursor()
+
+    stands = cursor.execute('''
+        SELECT s.id, s.name, s.description, r.name AS room_name
+        FROM stands s
+        LEFT JOIN rooms r ON s.room_id = r.id
+        ORDER BY s.name
+    ''').fetchall()
+    criteria = cursor.execute("SELECT id, name, description, max_score FROM criteria ORDER BY id").fetchall()
+
+    visitor_id, created = _get_or_create_visitor_cookie_value()
+    response = make_response(jsonify({
+        'success': True,
+        'stands': [dict(s) for s in stands],
+        'criteria': [dict(c) for c in criteria]
+    }))
+    if created:
+        response.set_cookie('visitor_id', visitor_id, max_age=60 * 60 * 24 * 365, samesite='Lax', secure=False, httponly=True)
+    return response
+
+
+@evaluations_bp.route('/api/visitor/evaluate', methods=['POST'])
+def api_visitor_evaluate():
+    """Öffentliche Besucherbewertung: 1 Bewertung pro Stand pro Gerät/Browser."""
+    data = request.get_json() or {}
+    stand_id = data.get('stand_id')
+    score_value = data.get('score')
+
+    if not stand_id or score_value is None:
+        return jsonify({'success': False, 'message': 'Stand und Punktzahl sind erforderlich.'}), 400
+
+    try:
+        stand_id = int(stand_id)
+        score_value = int(score_value)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Ungültige Eingabedaten.'}), 400
+
+    if score_value < 1 or score_value > 10:
+        return jsonify({'success': False, 'message': 'Punktzahl muss zwischen 1 und 10 liegen.'}), 400
+
+    visitor_id = request.cookies.get('visitor_id')
+    if not visitor_id:
+        return jsonify({'success': False, 'message': 'Bitte Seite neu laden, um eine Besucherkennung zu erhalten.'}), 400
+
+    visitor_token_hash = _hash_visitor_token(visitor_id)
+    ip_hash = hashlib.sha256((request.remote_addr or '').encode('utf-8')).hexdigest() if request.remote_addr else None
+    ua_hash = hashlib.sha256((request.headers.get('User-Agent') or '').encode('utf-8')).hexdigest()
+
+    db = get_db()
+    cursor = db.cursor()
+
+    try:
+        stand_exists = cursor.execute("SELECT id FROM stands WHERE id = ?", (stand_id,)).fetchone()
+        if not stand_exists:
+            return jsonify({'success': False, 'message': 'Stand nicht gefunden.'}), 404
+
+        criterion = cursor.execute("SELECT id, max_score FROM criteria ORDER BY id LIMIT 1").fetchone()
+        if not criterion:
+            return jsonify({'success': False, 'message': 'Keine Kriterien konfiguriert.'}), 400
+
+        if score_value > int(criterion['max_score']):
+            return jsonify({'success': False, 'message': f"Punktzahl darf max. {criterion['max_score']} sein."}), 400
+
+        cursor.execute(
+            "SELECT id FROM visitor_evaluations WHERE stand_id = ? AND visitor_token_hash = ?",
+            (stand_id, visitor_token_hash)
+        )
+        existing = cursor.fetchone()
+
+        if existing:
+            visitor_evaluation_id = existing['id']
+            cursor.execute("UPDATE visitor_evaluations SET timestamp = CURRENT_TIMESTAMP WHERE id = ?", (visitor_evaluation_id,))
+            cursor.execute("DELETE FROM visitor_evaluation_scores WHERE visitor_evaluation_id = ?", (visitor_evaluation_id,))
+            message = "Bewertung aktualisiert."
+        else:
+            cursor.execute(
+                "INSERT INTO visitor_evaluations (stand_id, visitor_token_hash, ip_hash, ua_hash) VALUES (?, ?, ?, ?)",
+                (stand_id, visitor_token_hash, ip_hash, ua_hash)
+            )
+            visitor_evaluation_id = cursor.lastrowid
+            message = "Bewertung gespeichert."
+
+        cursor.execute(
+            "INSERT INTO visitor_evaluation_scores (visitor_evaluation_id, criterion_id, score) VALUES (?, ?, ?)",
+            (visitor_evaluation_id, int(criterion['id']), score_value)
+        )
+        db.commit()
+        return jsonify({'success': True, 'message': message})
+    except sqlite3.Error as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': f'Datenbankfehler: {e}'}), 500

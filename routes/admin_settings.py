@@ -6,6 +6,8 @@ import os
 from werkzeug.utils import secure_filename
 
 admin_settings_bp = Blueprint('admin_settings', __name__)
+VALID_RANKING_SORT_MODES = {'total', 'average'}
+VALID_RANKING_ACTIVE_MODES = {'standard', 'visitor', 'combined'}
 
 @admin_settings_bp.route('/admin_settings')
 @role_required(['Administrator'])
@@ -43,6 +45,11 @@ def api_save_admin_settings():
     data = request.get_json()
 
     try:
+        if 'ranking_sort_mode' in data and data['ranking_sort_mode'] not in VALID_RANKING_SORT_MODES:
+            return jsonify({'success': False, 'message': 'Ungültige Sortierung für Rangliste.'}), 400
+        if 'ranking_active_mode' in data and data['ranking_active_mode'] not in VALID_RANKING_ACTIVE_MODES:
+            return jsonify({'success': False, 'message': 'Ungültiger aktiver Ranglistenmodus.'}), 400
+
         # Einstellungen aktualisieren oder einfügen
         for key, value in data.items():
             cursor.execute("INSERT OR REPLACE INTO app_settings (setting_key, setting_value) VALUES (?, ?)", (key, value))

@@ -102,8 +102,10 @@ def api_reset_data():
             # Lösche alle Einträge aus evaluation_scores und evaluations
             cursor.execute("DELETE FROM evaluation_scores")
             cursor.execute("DELETE FROM evaluations")
+            cursor.execute("DELETE FROM visitor_evaluation_scores")
+            cursor.execute("DELETE FROM visitor_evaluations")
             db.commit()
-            return jsonify({'success': True, 'message': 'Rangliste und alle Bewertungen erfolgreich zurückgesetzt!'})
+            return jsonify({'success': True, 'message': 'Rangliste (inkl. Besucherbewertungen) erfolgreich zurückgesetzt!'})
         elif action == 'reset_room_inspections':
             # Lösche alle Einträge aus room_inspections
             cursor.execute("DELETE FROM room_inspections")

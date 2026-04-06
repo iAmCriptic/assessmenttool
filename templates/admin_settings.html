@@ -284,6 +284,27 @@
                 </div>
             </div>
 
+            <h2 class="text-xl font-semibold text-gray-800">Ranglisten-Einstellungen</h2>
+            <div>
+                <label for="rankingSortMode" class="block text-sm font-medium text-gray-700">Sortierung</label>
+                <select id="rankingSortMode" name="ranking_sort_mode"
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+                               focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="total">Gesamtpunktzahl</option>
+                    <option value="average">Durchschnittliche Bewertung</option>
+                </select>
+            </div>
+            <div>
+                <label for="rankingActiveMode" class="block text-sm font-medium text-gray-700">Standard-Rangliste</label>
+                <select id="rankingActiveMode" name="ranking_active_mode"
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+                               focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="standard">Standard-Rangliste</option>
+                    <option value="visitor">Besucherrangliste</option>
+                    <option value="combined">Kombinierte Rangliste (50/50)</option>
+                </select>
+            </div>
+
             <div class="flex items-center justify-between">
                 <button type="submit"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
@@ -338,6 +359,8 @@
             const darkBgGradientColor2 = document.getElementById('darkBgGradientColor2'); // NEW
             const logoFile = document.getElementById('logoFile');
             const currentLogoPreview = document.getElementById('currentLogoPreview');
+            const rankingSortMode = document.getElementById('rankingSortMode');
+            const rankingActiveMode = document.getElementById('rankingActiveMode');
             const body = document.body;
             const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
             const darkModeToggle = document.getElementById('darkModeToggle'); // Get dark mode toggle button
@@ -362,6 +385,8 @@
                         bgGradientColor2.value = settings.bg_gradient_color2 || '#a7d9f7';
                         darkBgGradientColor1.value = settings.dark_bg_gradient_color1 || '#8B0000'; // NEW
                         darkBgGradientColor2.value = settings.dark_bg_gradient_color2 || '#00008B'; // NEW
+                        rankingSortMode.value = settings.ranking_sort_mode || 'total';
+                        rankingActiveMode.value = settings.ranking_active_mode || 'standard';
                         
                         if (settings.logo_path) {
                             currentLogoPreview.src = settings.logo_path;
@@ -402,7 +427,9 @@
                     bg_gradient_color1: bgGradientColor1.value,
                     bg_gradient_color2: bgGradientColor2.value,
                     dark_bg_gradient_color1: darkBgGradientColor1.value, // NEW
-                    dark_bg_gradient_color2: darkBgGradientColor2.value  // NEW
+                    dark_bg_gradient_color2: darkBgGradientColor2.value,  // NEW
+                    ranking_sort_mode: rankingSortMode.value,
+                    ranking_active_mode: rankingActiveMode.value
                 };
 
                 try {

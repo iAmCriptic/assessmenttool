@@ -366,6 +366,10 @@
         .dark .app-popup-content .close-button:hover {
             color: #ffffff;
         }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4 {{ 'dark' if dark_mode_enabled else '' }}">
@@ -392,7 +396,18 @@
             <p id="inlineMessageText"></p>
         </div>
 
-        <form id="loginForm" class="space-y-4">
+        <div id="entryChoice" class="space-y-3">
+            <button id="visitorEntryButton" type="button"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Als Besucher bewerten
+            </button>
+            <button id="showLoginFormButton" type="button"
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-opacity-50 transition duration-200 ease-in-out transform hover:scale-105">
+                Anmelden
+            </button>
+        </div>
+
+        <form id="loginForm" class="space-y-4 hidden mt-4">
             <div>
                 <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">Benutzername:</label>
                 <input type="text" id="username" name="username" required
@@ -462,6 +477,9 @@
             const darkModeToggle = document.getElementById('darkModeToggle');
             const body = document.body;
             const loginForm = document.getElementById('loginForm');
+            const entryChoice = document.getElementById('entryChoice');
+            const visitorEntryButton = document.getElementById('visitorEntryButton');
+            const showLoginFormButton = document.getElementById('showLoginFormButton');
             const dynamicLoginTitle = document.getElementById('dynamicLoginTitle'); // Referenz zum dynamischen Titel
             const faviconLink = document.getElementById('faviconLink'); // Get favicon link element
             const loginLogo = document.getElementById('loginLogo'); // Referenz zum Login-Logo hinzugefügt
@@ -575,6 +593,19 @@
 
             // Initiales Anwenden der App-Einstellungen
             await applyAppSettings();
+
+            visitorEntryButton.addEventListener('click', () => {
+                window.location.href = '{{ url_for("evaluations.visitor_rate_page") }}';
+            });
+
+            showLoginFormButton.addEventListener('click', () => {
+                entryChoice.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                const usernameInput = document.getElementById('username');
+                if (usernameInput) {
+                    usernameInput.focus();
+                }
+            });
 
             // Dark Mode Toggle Funktionalität
             darkModeToggle.addEventListener('click', async () => {

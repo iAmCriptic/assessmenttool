@@ -198,7 +198,7 @@
 <body class="{{ 'dark' if dark_mode_enabled else '' }}">
     <div id="inline-message-container" class="inline-message"></div>
 
-    <div class="main-content-area p-8 rounded-lg shadow-md w-full max-w-4xl border border-gray-200 relative pt-20">
+    <div class="main-content-area p-8 rounded-lg shadow-md w-full max-w-5xl border border-gray-200 relative pt-20">
         {# Logo oben links #}
         <div class="absolute top-0 left-0 p-4">
             <img id="mainLogo" src="{{ url_for('general.static_files', filename='img/logo_V2.png') }}" alt="Logo" class="max-h-16">
@@ -213,21 +213,21 @@
 
         <h1 class="text-3xl font-bold text-center mb-6">Willkommen auf der Hauptseite</h1>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
             {# Card for Evaluation - Only visible for 'Bewerter' or 'Administrator' #}
             {% if 'Bewerter' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
-            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+            <div class="card-item p-7 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-document text-5xl text-blue-600 dark:text-blue-400 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Bewertung</h3>
                 <p class="mb-4">Hier können Sie Stände bewerten.</p>
-                <div class="flex flex-wrap justify-center gap-2 mt-4"> {# Added flex container for buttons #}
+                <div class="flex flex-wrap justify-center gap-3 mt-5">
                     <a href="{{ url_for('evaluations.evaluate_page') }}"
                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Bewerten
                     </a>
-                    <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}" {# Corrected Print Button URL #}
+                    <a href="{{ url_for('evaluations.render_print_evaluation_template_blank') }}"
                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
@@ -239,7 +239,7 @@
 
             {# Card for My Evaluations - Only visible for 'Bewerter' or 'Administrator' #}
             {% if 'Bewerter' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
-            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+            <div class="card-item p-7 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-list-check text-5xl text-green-600 dark:text-green-400 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Meine Bewertungen</h3>
                 <p class="mb-4">Sehen Sie Ihre bisherigen Bewertungen ein.</p>
@@ -253,11 +253,11 @@
             {% endif %}
 
             {# Card for Ranking/Map - Updated title #}
-            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+            <div class="card-item p-7 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-map-pin text-5xl text-yellow-600 dark:text-yellow-400 mb-4"></i> {# Changed icon #}
                 <h3 class="text-xl font-semibold mb-2">Rangliste & Lageplan</h3> {# Updated title #}
                 <p class="mb-4">Sehen Sie die aktuelle Rangliste und den Lageplan an.</p> {# Updated description #}
-                <div class="flex flex-wrap justify-center gap-2 mt-4">
+                <div class="flex flex-wrap justify-center gap-3 mt-5">
                     <a href="{{ url_for('ranking.view_ranking_page') }}"
                        class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50
@@ -275,7 +275,7 @@
 
             {# Card for Room Inspections #}
             {% if 'Inspektor' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
-            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+            <div class="card-item p-7 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-broom text-5xl text-purple-600 dark:text-purple-400 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Rauminspektionen</h3>
                 <p class="mb-4">Verwalten Sie Rauminspektionen.</p>
@@ -290,7 +290,7 @@
 
             {# Card for Warnings #}
             {% if 'Verwarner' in session.get('user_roles', []) or 'Administrator' in session.get('user_roles', []) %}
-            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+            <div class="card-item p-7 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-exclamation text-5xl text-red-600 dark:text-red-400 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Verwarnungen</h3>
                 <p class="mb-4">Verwalten Sie Verwarnungen.</p>
@@ -305,55 +305,49 @@
 
             {# Card for Admin Management (only for admin) #}
             {% if 'Administrator' in session.get('user_roles', []) %}
-            <div class="card-item p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+            <div class="card-item p-7 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
                 <i class="fi fi-rr-settings text-5xl text-gray-700 dark:text-gray-300 mb-4"></i>
                 <h3 class="text-xl font-semibold mb-2">Admin-Verwaltung</h3>
                 <p class="mb-4">Benutzer, Stände, Kriterien und Listen verwalten.</p>
-                <div class="flex flex-wrap justify-center gap-2">
+                <div class="grid grid-cols-2 gap-2 w-full mt-2">
                     <a href="{{ url_for('users.manage_users_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Benutzer
                     </a>
                     <a href="{{ url_for('stands.manage_stand_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Stände
                     </a>
                     <a href="{{ url_for('criteria.manage_criteria_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Kriterien
                     </a>
                     <a href="{{ url_for('rooms.manage_rooms_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Räume
                     </a>
                     <a href="{{ url_for('general.manage_list_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Listen
                     </a>
-                    <a href="{{ url_for('evaluations.view_blank_printevaluations_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
-                              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
-                              transition duration-200 ease-in-out transform hover:scale-105">
-                        Leere Bögen
-                    </a>
                     <a href="{{ url_for('admin_settings.admin_settings_page') }}"
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Einstellungen
                     </a>
                     <a href="{{ url_for('map.manage_plan_page') }}" {# NEW: Link to manage floor plan #}
-                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-3 rounded-lg
+                       class="bg-gray-700 hover:bg-gray-800 text-white text-sm text-center font-bold py-2 px-3 rounded-lg col-span-2
                               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50
                               transition duration-200 ease-in-out transform hover:scale-105">
                         Lageplan verwalten
