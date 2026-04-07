@@ -445,7 +445,7 @@
                     if (response.ok && data.success) {
                         displayInlineMessage(data.message, 'success'); // Display success message
                         setTimeout(() => {
-                            window.location.href = '{{ url_for("auth.login_page") }}'; // Redirect after message is displayed
+                            window.location.href = window.withAppRoot ? window.withAppRoot('{{ url_for("auth.login_page") }}') : '{{ url_for("auth.login_page") }}';
                         }, 1500); // Wait 1.5 seconds before redirecting
                     } else {
                         displayInlineMessage(data.message || 'Fehler beim Abmelden.', 'error');

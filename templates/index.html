@@ -658,9 +658,9 @@
                             // Sofortige Weiterleitung bei erfolgreichem Login
                             const root = (window.APP_ROOT || '').replace(/\/$/, '');
                             if (data.redirect_to_setup) {
-                                window.location.href = `${root}/admin_setup`;
+                                window.location.href = window.withAppRoot ? window.withAppRoot('/admin_setup') : `${root}/admin_setup`;
                             } else {
-                                window.location.href = `${root}/home`;
+                                window.location.href = window.withAppRoot ? window.withAppRoot('/home') : `${root}/home`;
                             }
                         } else {
                             displayInlineMessage(data.message, 'error');

@@ -220,7 +220,7 @@
             });
 
             backButton.addEventListener('click', () => {
-                window.location.href = '{{ url_for("general.home") }}';
+                window.location.href = window.withAppRoot ? window.withAppRoot('{{ url_for("general.home") }}') : '{{ url_for("general.home") }}';
             });
 
             modeButtons.forEach(btn => btn.addEventListener('click', () => fetchAndRenderRankings(btn.dataset.mode)));

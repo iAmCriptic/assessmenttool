@@ -275,7 +275,7 @@
                         if (data.success) {
                             displayModalMessage(data.message, 'success');
                             setTimeout(() => {
-                                window.location.href = '{{ url_for("general.home") }}'; // Corrected endpoint
+                                window.location.href = window.withAppRoot ? window.withAppRoot('{{ url_for("general.home") }}') : '{{ url_for("general.home") }}';
                             }, 1500); // Redirect after 1.5 seconds
                         } else {
                             displayModalMessage(data.message, 'error');

@@ -120,6 +120,13 @@ def inject_app_root_script(response):
 window.APP_ROOT = {app_root!r};
 (function() {{
   const root = window.APP_ROOT || '';
+  window.withAppRoot = function(path) {{
+    if (!path) return root || '/';
+    if (!root) return path;
+    if (path === root || path.startsWith(root + '/')) return path;
+    if (path.startsWith('/')) return root + path;
+    return root + '/' + path;
+  }};
   const originalFetch = window.fetch ? window.fetch.bind(window) : null;
   if (!originalFetch) return;
   window.fetch = function(input, init) {{

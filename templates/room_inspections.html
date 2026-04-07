@@ -457,7 +457,7 @@
             });
 
             backButton.addEventListener('click', () => {
-                window.location.href = '{{ url_for("general.home") }}';
+                window.location.href = window.withAppRoot ? window.withAppRoot('{{ url_for("general.home") }}') : '{{ url_for("general.home") }}';
             });
 
             // Funktion zum Abrufen und Rendern von Rauminspektionen
