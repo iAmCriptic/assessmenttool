@@ -32,11 +32,30 @@ from routes.errors import errors_bp
 from routes.map import map_bp # NEU: Importiere den Map Blueprint
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+
+class PrefixPathMiddleware:
+    """Entfernt optionalen URL-Präfix aus PATH_INFO (z. B. /sommerfest)."""
+
+    def __init__(self, app, prefix):
+        self.app = app
+        self.prefix = (prefix or '').rstrip('/')
+
+    def __call__(self, environ, start_response):
+        if self.prefix:
+            path_info = environ.get('PATH_INFO', '') or ''
+            if path_info == self.prefix:
+                environ['PATH_INFO'] = '/'
+            elif path_info.startswith(self.prefix + '/'):
+                environ['PATH_INFO'] = path_info[len(self.prefix):] or '/'
+        return self.app(environ, start_response)
+
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
 # Unterstützt Betrieb hinter Reverse-Proxy (z. B. Nginx mit X-Forwarded-Prefix)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
+app.wsgi_app = PrefixPathMiddleware(app.wsgi_app, app.config.get('APPLICATION_ROOT', ''))
 
 # Registriere Teardown-Funktion für die Datenbank
 app.teardown_appcontext(close_connection)
@@ -125,7 +144,14 @@ def before_request_checks():
     ]
     # Erlaube alle API-Aufrufe, die nicht explizit durch @role_required geschützt sind
     # (dies wird von den Blueprints selbst gehandhabt)
-    if request.endpoint in allowed_endpoints or request.path.startswith('/api/'):
+    app_root = (request.script_root or app.config.get('APPLICATION_ROOT', '') or '').rstrip('/')
+    prefixed_api_path = f'{app_root}/api/' if app_root else None
+
+    if (
+        request.endpoint in allowed_endpoints
+        or request.path.startswith('/api/')
+        or (prefixed_api_path and request.path.startswith(prefixed_api_path))
+    ):
         return None
 
     # Überprüfe, ob Admin-Setup erforderlich ist
