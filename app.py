@@ -36,17 +36,31 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 class PrefixPathMiddleware:
     """Entfernt optionalen URL-Präfix aus PATH_INFO (z. B. /sommerfest)."""
 
-    def __init__(self, app, prefix):
+    def __init__(self, app, prefix, fallback_prefixes=None):
         self.app = app
         self.prefix = (prefix or '').rstrip('/')
+        self.fallback_prefixes = [p.rstrip('/') for p in (fallback_prefixes or []) if p]
 
     def __call__(self, environ, start_response):
+        path_info = environ.get('PATH_INFO', '') or ''
+
+        forwarded_prefix = (environ.get('HTTP_X_FORWARDED_PREFIX', '') or '').rstrip('/')
+        candidates = []
+        if forwarded_prefix:
+            candidates.append(forwarded_prefix)
         if self.prefix:
-            path_info = environ.get('PATH_INFO', '') or ''
-            if path_info == self.prefix:
+            candidates.append(self.prefix)
+        candidates.extend(self.fallback_prefixes)
+
+        for prefix in candidates:
+            if not prefix:
+                continue
+            if path_info == prefix:
                 environ['PATH_INFO'] = '/'
-            elif path_info.startswith(self.prefix + '/'):
-                environ['PATH_INFO'] = path_info[len(self.prefix):] or '/'
+                break
+            if path_info.startswith(prefix + '/'):
+                environ['PATH_INFO'] = path_info[len(prefix):] or '/'
+                break
         return self.app(environ, start_response)
 
 
@@ -55,7 +69,11 @@ app.config.from_object(Config)
 
 # Unterstützt Betrieb hinter Reverse-Proxy (z. B. Nginx mit X-Forwarded-Prefix)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
-app.wsgi_app = PrefixPathMiddleware(app.wsgi_app, app.config.get('APPLICATION_ROOT', ''))
+app.wsgi_app = PrefixPathMiddleware(
+    app.wsgi_app,
+    app.config.get('APPLICATION_ROOT', ''),
+    fallback_prefixes=['/sommerfest']
+)
 
 # Registriere Teardown-Funktion für die Datenbank
 app.teardown_appcontext(close_connection)
