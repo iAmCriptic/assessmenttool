@@ -30,9 +30,13 @@ from routes.general import general_bp
 from routes.excel_uploads import excel_uploads_bp
 from routes.errors import errors_bp
 from routes.map import map_bp # NEU: Importiere den Map Blueprint
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Unterstützt Betrieb hinter Reverse-Proxy (z. B. Nginx mit X-Forwarded-Prefix)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
 
 # Registriere Teardown-Funktion für die Datenbank
 app.teardown_appcontext(close_connection)
@@ -55,6 +59,43 @@ app.register_blueprint(general_bp)
 app.register_blueprint(excel_uploads_bp)
 app.register_blueprint(errors_bp)
 app.register_blueprint(map_bp) # NEU: Registriere den Map Blueprint
+
+
+@app.after_request
+def inject_app_root_script(response):
+    """
+    Injiziert für HTML-Seiten ein kleines Script, das:
+    - den App-Unterpfad als window.APP_ROOT verfügbar macht
+    - fetch('/...') automatisch auf <APP_ROOT>/... umbiegt
+    """
+    content_type = response.headers.get('Content-Type', '')
+    if 'text/html' not in content_type:
+        return response
+
+    body = response.get_data(as_text=True)
+    if '</head>' not in body or 'window.APP_ROOT' in body:
+        return response
+
+    app_root = request.script_root or app.config.get('APPLICATION_ROOT', '') or ''
+    app_root = app_root.rstrip('/')
+    injected = f"""
+<script>
+window.APP_ROOT = {app_root!r};
+(function() {{
+  const root = window.APP_ROOT || '';
+  const originalFetch = window.fetch ? window.fetch.bind(window) : null;
+  if (!originalFetch) return;
+  window.fetch = function(input, init) {{
+    if (typeof input === 'string' && input.startsWith('/') && !input.startsWith('//') && root) {{
+      input = root + input;
+    }}
+    return originalFetch(input, init);
+  }};
+}})();
+</script>
+"""
+    response.set_data(body.replace('</head>', injected + '\n</head>'))
+    return response
 
 
 # Vor jeder Anfrage ausführen

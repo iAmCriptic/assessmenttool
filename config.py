@@ -7,6 +7,8 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'png', 'jpg', 'jpeg', 'gif', 'svg'}
     DEFAULT_ADMIN_PASSWORD = 'password' # Standard-Admin-Passwort, das geändert werden muss
+    # Optionaler URL-Unterpfad hinter Reverse-Proxy, z. B. "/unterpfad"
+    APPLICATION_ROOT = os.environ.get('APPLICATION_ROOT', '').rstrip('/')
 
     # Stelle sicher, dass der Upload-Ordner existiert
     if not os.path.exists(UPLOAD_FOLDER):
