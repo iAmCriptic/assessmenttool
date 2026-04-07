@@ -130,7 +130,14 @@ window.APP_ROOT = {app_root!r};
   const originalFetch = window.fetch ? window.fetch.bind(window) : null;
   if (!originalFetch) return;
   window.fetch = function(input, init) {{
-    if (typeof input === 'string' && input.startsWith('/') && !input.startsWith('//') && root) {{
+    if (
+      typeof input === 'string'
+      && input.startsWith('/')
+      && !input.startsWith('//')
+      && root
+      && input !== root
+      && !input.startsWith(root + '/')
+    ) {{
       input = root + input;
     }}
     return originalFetch(input, init);
@@ -140,7 +147,14 @@ window.APP_ROOT = {app_root!r};
   if (navigator.serviceWorker && navigator.serviceWorker.register) {{
     const originalRegister = navigator.serviceWorker.register.bind(navigator.serviceWorker);
     navigator.serviceWorker.register = function(scriptURL, options) {{
-      if (typeof scriptURL === 'string' && scriptURL.startsWith('/') && !scriptURL.startsWith('//') && root) {{
+      if (
+        typeof scriptURL === 'string'
+        && scriptURL.startsWith('/')
+        && !scriptURL.startsWith('//')
+        && root
+        && scriptURL !== root
+        && !scriptURL.startsWith(root + '/')
+      ) {{
         scriptURL = root + scriptURL;
       }}
       return originalRegister(scriptURL, options);
