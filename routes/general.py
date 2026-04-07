@@ -37,6 +37,12 @@ def toggle_dark_mode():
 @general_bp.route('/static_files/<path:filename>')
 def static_files(filename):
     """Dient statischen Dateien aus dem Unterordner 'static'."""
+    target = os.path.join(current_app.static_folder, filename)
+
+    # Abwärtskompatibilität: ältere Templates/DB-Werte verweisen auf logo_V2.png.
+    if filename == 'img/logo_V2.png' and not os.path.exists(target):
+        return send_from_directory(current_app.static_folder, 'img/logo.svg')
+
     return send_from_directory(current_app.static_folder, filename)
 
 @general_bp.route('/service-worker.js')

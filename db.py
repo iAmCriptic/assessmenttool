@@ -278,8 +278,8 @@ def add_initial_data():
         'bg_gradient_color2': '#a7d9f7',
         'dark_bg_gradient_color1': '#8B0000', # NEU: Standard-Dark-Mode-Verlaufsfarbe 1
         'dark_bg_gradient_color2': '#00008B', # NEU: Standard-Dark-Mode-Verlaufsfarbe 2
-        'logo_url': '/static/img/logo_V2.png', # Direkter relativer Pfad
-        'favicon_url': '/static/img/logo_V2.png', # Direkter relativer Pfad
+        'logo_url': '/static_files/img/logo_V2.png', # Direkter relativer Pfad
+        'favicon_url': '/static_files/img/logo_V2.png', # Direkter relativer Pfad
         'ranking_sort_mode': 'total',
         'ranking_active_mode': 'standard'
     }
@@ -290,6 +290,12 @@ def add_initial_data():
         if setting is None:
             # Füge die Einstellung nur hinzu, wenn sie noch nicht existiert
             cursor.execute("INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)", (key, default_value))
+
+    # Migration alter statischer Pfade auf den aktuell verwendeten static_files-Endpunkt.
+    cursor.execute(
+        "UPDATE app_settings SET setting_value = '/static_files/img/logo_V2.png' "
+        "WHERE setting_key IN ('logo_url', 'favicon_url') AND setting_value = '/static/img/logo_V2.png'"
+    )
     db.commit()
 
     # Die Abschnitte zum Hinzufügen von Beispiel-Ständen, -Räumen und -Kriterien wurden entfernt.

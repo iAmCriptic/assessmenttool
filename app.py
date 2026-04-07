@@ -91,6 +91,17 @@ window.APP_ROOT = {app_root!r};
     }}
     return originalFetch(input, init);
   }};
+
+  // Sorgt dafür, dass Service-Worker-Registrierung auch hinter Unterpfaden funktioniert.
+  if (navigator.serviceWorker && navigator.serviceWorker.register) {{
+    const originalRegister = navigator.serviceWorker.register.bind(navigator.serviceWorker);
+    navigator.serviceWorker.register = function(scriptURL, options) {{
+      if (typeof scriptURL === 'string' && scriptURL.startsWith('/') && !scriptURL.startsWith('//') && root) {{
+        scriptURL = root + scriptURL;
+      }}
+      return originalRegister(scriptURL, options);
+    }};
+  }}
 }})();
 </script>
 """
@@ -107,6 +118,7 @@ def before_request_checks():
         'auth.login',
         'auth.admin_setup',
         'general.static_files', # Wichtig für CSS, JS, Bilder
+        'general.serve_service_worker', # Service Worker muss ohne Login erreichbar sein
         'admin_settings.api_get_settings', # Admin-Einstellungen API muss ohne Login erreichbar sein, um Logo/Hintergrund zu laden
         'admin_settings.api_upload_logo', # Logo-Upload sollte nur für Admins zugänglich sein, daher nicht hier
         'map.serve_uploaded_plans' # Erlaube Zugriff auf hochgeladene Planbilder
@@ -148,4 +160,7 @@ if __name__ == '__main__':
     with app.app_context():
         init_db()
         add_initial_data()
-    app.run(debug=True, host='0.0.0.0', port='5000')  # Host auf
+    host = os.environ.get('FLASK_HOST', '0.0.0.0')
+    port = int(os.environ.get('FLASK_PORT', '5001'))
+    debug = os.environ.get('FLASK_DEBUG', '0') == '1'
+    app.run(debug=debug, host=host, port=port)
