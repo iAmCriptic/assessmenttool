@@ -1,7 +1,7 @@
 import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, current_app
 from db import get_db, get_role_id
-from utils import check_admin_setup_required
+from utils import check_admin_setup_required, is_api_request
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -107,7 +107,7 @@ def admin_setup():
     # Überprüfen, ob der aktuell angemeldete Benutzer 'admin' ist und noch das Standardpasswort hat
     if not session.get('logged_in') or session.get('username') != 'admin':
         # Wenn nicht angemeldet oder kein Admin, leite zu Login-Seite für HTML-Anfragen weiter
-        if not request.path.startswith('/api/'):
+        if not is_api_request(request):
             return redirect(url_for('auth.login_page'))
         # Für API-Anfragen, gib "nicht autorisiert" zurück
         return jsonify({'success': False, 'message': 'Unauthorized access'}), 401
@@ -117,8 +117,8 @@ def admin_setup():
     
     if not admin_password_row or admin_password_row['password'] != current_app.config['DEFAULT_ADMIN_PASSWORD']:
         # Admin-Passwort wurde bereits geändert oder es ist kein Admin-Benutzer
-        if not request.path.startswith('/api/'):
-            return redirect(url_for('home')) # Leite zur Startseite weiter
+        if not is_api_request(request):
+            return redirect(url_for('general.home'))
         return jsonify({'success': False, 'message': 'Admin-Setup nicht erforderlich oder bereits abgeschlossen'}), 400
 
     if request.method == 'POST':

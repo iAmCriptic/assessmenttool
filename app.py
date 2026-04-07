@@ -12,7 +12,7 @@ from config import Config
 from db import get_db, close_connection, init_db, add_initial_data, get_role_id
 
 # Importiere Hilfsfunktionen und Dekoratoren
-from utils import check_admin_setup_required, format_datetime
+from utils import check_admin_setup_required, format_datetime, is_api_request
 from decorators import role_required
 
 # Importiere Blueprints
@@ -162,14 +162,7 @@ def before_request_checks():
     ]
     # Erlaube alle API-Aufrufe, die nicht explizit durch @role_required geschützt sind
     # (dies wird von den Blueprints selbst gehandhabt)
-    app_root = (request.script_root or app.config.get('APPLICATION_ROOT', '') or '').rstrip('/')
-    prefixed_api_path = f'{app_root}/api/' if app_root else None
-
-    if (
-        request.endpoint in allowed_endpoints
-        or request.path.startswith('/api/')
-        or (prefixed_api_path and request.path.startswith(prefixed_api_path))
-    ):
+    if request.endpoint in allowed_endpoints or is_api_request(request):
         return None
 
     # Überprüfe, ob Admin-Setup erforderlich ist

@@ -2,6 +2,25 @@ import datetime
 from flask import g, current_app
 import sqlite3
 
+
+def is_api_request(req):
+    """Erkennt API-Aufrufe robust, auch hinter Reverse-Proxy-Unterpfaden."""
+    path = (req.path or '').rstrip('/')
+    if path.startswith('/api') or path.startswith('/warnings/api'):
+        return True
+
+    script_root = (req.script_root or current_app.config.get('APPLICATION_ROOT', '') or '').rstrip('/')
+    if script_root:
+        if path.startswith(f'{script_root}/api') or path.startswith(f'{script_root}/warnings/api'):
+            return True
+
+    forwarded_prefix = (req.headers.get('X-Forwarded-Prefix', '') or '').rstrip('/')
+    if forwarded_prefix:
+        if path.startswith(f'{forwarded_prefix}/api') or path.startswith(f'{forwarded_prefix}/warnings/api'):
+            return True
+
+    return False
+
 def format_datetime(value):
     """Formatiert einen ISO-Datums-/Zeitstring in 'TT.MM. - HH:MM'."""
     if value:

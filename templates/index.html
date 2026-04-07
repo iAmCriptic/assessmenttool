@@ -656,10 +656,11 @@
                     if (response.ok) {
                         if (data.success) {
                             // Sofortige Weiterleitung bei erfolgreichem Login
+                            const root = (window.APP_ROOT || '').replace(/\/$/, '');
                             if (data.redirect_to_setup) {
-                                window.location.href = '{{ url_for("auth.admin_setup") }}';
+                                window.location.href = `${root}/admin_setup`;
                             } else {
-                                window.location.href = '{{ url_for("general.home") }}';
+                                window.location.href = `${root}/home`;
                             }
                         } else {
                             displayInlineMessage(data.message, 'error');

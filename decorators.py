@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import session, redirect, url_for, flash, request, jsonify
 from db import get_db, get_role_id # Importiere get_db und get_role_id
+from utils import is_api_request
 
 def role_required(allowed_roles):
     """
@@ -12,7 +13,7 @@ def role_required(allowed_roles):
         def decorated_function(*args, **kwargs):
             if not session.get('logged_in'):
                 # Für API-Endpunkte, gib JSON-Fehler zurück
-                if request.path.startswith('/api/'):
+                if is_api_request(request):
                     return jsonify({'success': False, 'message': 'Authentication required'}), 401
                 flash('Sie müssen sich anmelden, um diese Seite aufzurufen.', 'error')
                 return redirect(url_for('auth.login_page')) # Verwende Blueprint-Namen
@@ -28,10 +29,10 @@ def role_required(allowed_roles):
             
             if not has_required_role:
                 # Für API-Endpunkte, gib JSON-Fehler zurück
-                if request.path.startswith('/api/'):
+                if is_api_request(request):
                     return jsonify({'success': False, 'message': 'Access denied: You do not have the required permissions.'}), 403
                 flash("Zugriff verweigert: Sie haben nicht die erforderlichen Berechtigungen für diese Seite.", "error")
-                return redirect(url_for('home')) # 'home' ist eine allgemeine Route, die noch definiert werden muss
+                return redirect(url_for('general.home'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator
