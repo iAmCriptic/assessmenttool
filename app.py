@@ -12,7 +12,7 @@ from config import Config
 from db import get_db, close_connection, init_db, add_initial_data, get_role_id
 
 # Importiere Hilfsfunktionen und Dekoratoren
-from utils import check_admin_setup_required, format_datetime, is_api_request
+from utils import check_admin_setup_required, format_datetime, is_api_request, prefixed_url_for
 from decorators import role_required
 
 # Importiere Blueprints
@@ -177,11 +177,11 @@ def before_request_checks():
         # Wenn Admin angemeldet ist und Setup erforderlich ist, leite zur Setup-Seite weiter
         if session.get('logged_in') and session.get('username') == 'admin':
             if request.endpoint != 'auth.admin_setup': # Verhindere Endlosschleife
-                return redirect(url_for('auth.admin_setup'))
+                return redirect(prefixed_url_for('auth.admin_setup'))
         # Wenn nicht angemeldet, aber Setup erforderlich ist, stelle sicher, dass sie zur Login-Seite gelangen
         elif not session.get('logged_in'):
             if request.endpoint not in ['auth.login_page', 'auth.login']: # Verhindere Endlosschleife
-                return redirect(url_for('auth.login_page'))
+                return redirect(prefixed_url_for('auth.login_page'))
     
     # Wenn Admin-Setup nicht erforderlich ist oder der Benutzer kein Admin ist, fahre normal fort
     return None
@@ -189,7 +189,7 @@ def before_request_checks():
 @app.route('/')
 def index():
     """Leitet zur Login-Seite weiter."""
-    return redirect(url_for('auth.login_page'))
+    return redirect(prefixed_url_for('auth.login_page'))
 
 # Route für statische Dateien im Hauptverzeichnis (z.B. manifest.json, service-worker.js)
 @app.route('/<path:filename>')

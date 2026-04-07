@@ -1,7 +1,7 @@
 import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, current_app
 from db import get_db, get_role_id
-from utils import check_admin_setup_required, is_api_request
+from utils import check_admin_setup_required, is_api_request, prefixed_url_for
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -81,7 +81,7 @@ def logout():
     session.pop('is_admin', None)
     session.pop('user_roles', None)
     session.pop('dark_mode_enabled', None) # Dark Mode-Präferenz beim Abmelden löschen
-    return redirect(url_for('auth.login_page'))
+    return redirect(prefixed_url_for('auth.login_page'))
 
 @auth_bp.route('/api/logout') # API-Endpunkt zum Abmelden
 def api_logout():
@@ -108,7 +108,7 @@ def admin_setup():
     if not session.get('logged_in') or session.get('username') != 'admin':
         # Wenn nicht angemeldet oder kein Admin, leite zu Login-Seite für HTML-Anfragen weiter
         if not is_api_request(request):
-            return redirect(url_for('auth.login_page'))
+            return redirect(prefixed_url_for('auth.login_page'))
         # Für API-Anfragen, gib "nicht autorisiert" zurück
         return jsonify({'success': False, 'message': 'Unauthorized access'}), 401
 
@@ -118,7 +118,7 @@ def admin_setup():
     if not admin_password_row or admin_password_row['password'] != current_app.config['DEFAULT_ADMIN_PASSWORD']:
         # Admin-Passwort wurde bereits geändert oder es ist kein Admin-Benutzer
         if not is_api_request(request):
-            return redirect(url_for('general.home'))
+            return redirect(prefixed_url_for('general.home'))
         return jsonify({'success': False, 'message': 'Admin-Setup nicht erforderlich oder bereits abgeschlossen'}), 400
 
     if request.method == 'POST':

@@ -1,5 +1,5 @@
 import datetime
-from flask import g, current_app
+from flask import g, current_app, request, url_for
 import sqlite3
 
 
@@ -20,6 +20,15 @@ def is_api_request(req):
             return True
 
     return False
+
+
+def prefixed_url_for(endpoint, **values):
+    """Erzeugt URL mit APPLICATION_ROOT, falls der Proxy keinen script_root liefert."""
+    generated = url_for(endpoint, **values)
+    app_root = (request.script_root or current_app.config.get('APPLICATION_ROOT', '') or '').rstrip('/')
+    if app_root and generated.startswith('/') and not generated.startswith(app_root + '/'):
+        return app_root + generated
+    return generated
 
 def format_datetime(value):
     """Formatiert einen ISO-Datums-/Zeitstring in 'TT.MM. - HH:MM'."""
